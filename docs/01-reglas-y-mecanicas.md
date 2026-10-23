@@ -368,6 +368,13 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario el 2026-10-23; el
 | D-39 | *El tiempo es esencial* | Ver §11.2 |
 | D-43 | Solitario | Faltan la cara solitaria de las tarjetas y la tabla de dados (§13). Fuera de M1 |
 | D-45 | Movimiento de Moore | Una vez por turno, de una posición a otra (1 o 2 pasos), en la planificación británica |
+| D-46 | Moore cae por acción británica fuera del turno británico (arengando durante el turno francés): ¿cuándo se retira? | Al final del turno en curso |
+| D-47 | «Descartar 3 tácticas en cualquier momento» | Se ofrece en el paso del Mercado del propio turno (no en todos los momentos, para no llenar la partida de preguntas) |
+| D-48 | Carta de una unidad ya eliminada | Da sus cubos y entra en la racha, pero no la bonificación de +2 de «sin objetivos» (§5.4 habla de unidades activadas sin objetivos, no de unidades fuera del juego) |
+| D-49 | Moore abatido que aún no se ha retirado | Mantiene su apoyo (+1 dado / relanzamiento) pero no puede moverse ni arengar |
+| D-50 | Orden en una ventana de tácticas | Primero el jugador activo y luego el otro; cada uno puede jugar varias antes de pasar. Las de «cualquier momento» no se ofrecen en los tests de moral |
+| D-51 | *Reorganización*, *Improvisación*: «cualquier unidad» | Unidades propias. *Improvisación* deja al menos 1 punto a la que cede |
+| D-52 | *Recapacitando* | Cuenta como la compra del turno: después no se puede comprar del Mercado ni se descarta la carta de la derecha |
 
 ## 15. Ideas de la v2.1 (no forman parte de las reglas)
 

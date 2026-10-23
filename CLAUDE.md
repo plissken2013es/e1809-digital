@@ -5,7 +5,8 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 ## Estado (actualizar en el mismo cambio que cierra cada hito)
 
 - ✅ M0 datos: tarjetas, cartas y mapa → `src/data/*.json` + `assets/`; reglas y decisiones `[D-n]` en docs/01 (2026-10-23)
-- ⏳ M1 motor de 2 jugadores · M2 interfaz · M3 revisión de reglas · M4 equilibrio · M5 solitario y móvil
+- ✅ M1 motor de 2 jugadores: todas las reglas de la v1.6c, 36 tácticas, Moore, Soult, opciones de reglas, bots aleatorio y codicioso (2026-10-23)
+- ⏳ M2 interfaz · M3 revisión de reglas · M4 equilibrio · M5 solitario y móvil
 
 ## Documentos (leer antes de tocar reglas o código)
 
@@ -24,7 +25,11 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 ## Stack y convenciones
 
 - **JS puro con módulos ES, sin build ni dependencias**; JSON con `with { type: 'json' }`. Código en inglés; **textos del juego e interfaz en español** (el juego está impreso en español); documentos en español.
-- Motor puro (`src/engine/`): sin DOM, sin timers, sin `Math.random`. Generador de decisiones como en Witch Hunter; cada petición lleva el bando (`side`) que decide (docs/02 §2).
+- Motor puro (`src/engine/`): sin DOM, sin timers, sin `Math.random` (PRNG en `g.rng`; los dados con `rollDie`, que respeta los dados forzados del escenario).
+- **El motor es un generador** (`run(g)` en game.js), como en Witch Hunter: cada decisión es `yield* choose(g, side, …)` / `pick` / `confirm` (ask.js) y **lleva el bando que decide** (`side`), porque los dos deciden también en el turno del otro. Las de una sola opción se responden solas. Olvidar el `yield*` deja la regla sin ejecutar sin dar error. `kind` clasifica la petición para los bots y la interfaz.
+- Las funciones de state.js no preguntan (no son generadores); las que pueden preguntar (morale, commanders, combat, tactics, turn) sí.
+- **Tácticas:** cada carta en `RULES` de tactics.js (`can` + `play`), ofrecida por `tacticWindow(g, punto, ctx)` según su `window` (docs/01 §11.1). *Reagrupación* va en morale.js, *A sangre y fuego* en las órdenes (turn.js) y *Los hombres están agotados* en `rerollCubeCost`.
+- `Session` (session.js) = setup + respuestas: deshacer (con suelo en la última respuesta que movió el PRNG), rebobinar, códigos `E18.` y `node tools/replay.mjs fichero --state --decisions`.
 - Servir con `python tools/serve.py 8012` (sin caché; está en `.claude/launch.json`).
 
 ## Datos
@@ -36,4 +41,5 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 
 ## Tests
 
-- `npm test`: hoy solo la coherencia de los datos (`tests/data.test.js`).
+- `npm test`: datos (`data.test.js`), reglas con escenarios y dados forzados (`rules.test.js`) y simulación (`simulation.test.js`: bots aleatorio, codicioso y mixto con todas las opciones de reglas; invariantes tras cada respuesta). `SIM_GAMES=2000 npm test` para más partidas.
+- Helpers en `tests/helpers.js`: `answer(session, 'texto de la opción')`, `until(session, 'texto del prompt', passive)`, `checkInvariants(g)`, `playOut(session, bot)`, `bySide({ french, british })`.

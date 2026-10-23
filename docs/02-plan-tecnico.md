@@ -36,24 +36,29 @@ Como en Witch Hunter, **la partida entera es un generador** (`run(g)` en `game.j
 ```
 src/engine/
   ask.js       choose / pick / confirm (con side), beat, GameEnd, log
-  rng.js       mulberry32
+  rng.js       mulberry32 y rollDie (con los dados forzados del escenario)
   data.js      catálogos (src/data/*.json) e índices
-  state.js     estado inicial, consultas (en juego, control, condiciones de las órdenes)
+  state.js     consultas y cambios sin decisiones: condiciones de las órdenes, dados, cubos, bajas, eliminación, victoria
   combat.js    dados, relanzamientos, parejas, plazas, bajas
-  morale.js    tests, desbandada, salvaciones (Moore, Soult, Reagrupación)
-  commanders.js  Moore (movimiento, Senda, apoyo, arenga, muerte) y Soult
-  tactics.js   mercado y regla de cada una de las 36 cartas (por id)
-  turn.js      planificación, combate, reorganización, racha de Inercia
+  morale.js    pérdidas, tests, desbandada, salvaciones (Reagrupación, Soult, Moore), reparto de pérdidas
+  commanders.js  Moore (movimiento, Senda, arenga, muerte, la Artillería contra Moore)
+  tactics.js   ventanas, regla de cada una de las 36 cartas (por id) y mercado
+  turn.js      turno, activación, órdenes, refuerzos, racha, doble activación de Soult, reorganización
   game.js      preparación, opciones de reglas, escenario de depuración, bucle de rondas
   session.js   Session y códigos E18.
-src/ai/        randomBot, greedyBot y, si llega el material, el automa oficial (§13 de docs/01)
-src/ui/        app.js, view.js (mapa, tarjetas, mano, mercado, registro, depuración)
+src/ai/        randomBot y greedyBot (y el automa oficial si aparece su material, docs/01 §13)
+src/ui/        (M2) app.js, view.js (mapa, tarjetas, mano, mercado, registro, depuración)
 ```
+
+Detalles del motor:
+- **Toda carta está siempre en una zona.** Cartas de Acción: mano, mazo, descarte o `limbo` (la mano inicial mientras se elige y las dos cartas de Soult). Tácticas: mazo, fila o descarte del Mercado, o zona de un jugador. Los tests de simulación lo comprueban tras cada respuesta, junto con la conservación de los 25 cubos y que las fichas que pierde un bando coincidan con el contador de bajas del otro.
+- El combate en curso vive en `g.combat` (las tácticas lo leen y lo cambian) y pasa a `g.lastCombat` al acabar.
+- La victoria se comprueba en cada eliminación (`checkVictory` lanza `GameEnd`); si los dos bandos llegan a la vez, gana el activo (el atacante).
 
 ## 3. Herramientas de depuración
 
 Las mismas que en Witch Hunter:
-- **Escenario** en JSON: cartas encima de los mazos, control de las plazas, moral y bloques de cada unidad, Senda de Moore.
+- **Escenario** en JSON (`DEFAULT_SETUP` en game.js): manos, cartas encima de los mazos, descartes, racha, control de las plazas, moral, bloques y estado de cada unidad, Moore, Soult, cubos, tácticas, Mercado y **dados forzados** (`dice`: los próximos resultados, en orden).
 - **Opciones de reglas** (docs/01 §12).
 - **Bot** por bando (humano / aleatorio / codicioso).
 - **Deshacer** con suelo anti-trampas y **viaje en el tiempo** en Debug.
@@ -71,12 +76,12 @@ Sirve para responder, por ejemplo, si la Bayoneta como ±1 desequilibra, cuánto
 
 ## 5. Hoja de ruta
 
-**Estado:** M0 ✅ · M1–M5 pendientes.
+**Estado:** M0 ✅ · M1 ✅ · M2–M5 pendientes.
 
 | Hito | Contenido | Hecho cuando |
 |---|---|---|
 | **M0 · Datos** | Imágenes (cartas, tarjetas, mapa ilustrado), textos de tácticas desde el PDF, tarjetas curadas a mano, posiciones del tablero; docs/01 con las decisiones `[D-n]` | ✅ 2026-10-23 |
-| **M1 · Motor de 2 jugadores** | Todas las reglas de la v1.6c, las 36 tácticas, Moore y Soult, opciones de reglas; bots aleatorio y codicioso; tests por regla y simulación con invariantes | partidas completas bot contra bot sin errores |
+| **M1 · Motor de 2 jugadores** | Todas las reglas de la v1.6c, las 36 tácticas, Moore y Soult, opciones de reglas; bots aleatorio y codicioso; tests por regla y simulación con invariantes | ✅ 2026-10-23: 30 tests; 6.000 partidas simuladas con todas las opciones, sin errores |
 | **M2 · Prototipo de depuración** | Interfaz sobre el mapa, hotseat, escenario, deshacer, códigos, replay | partida jugable a mano |
 | **M3 · Revisión de reglas** | Repasar las decisiones `[D-n]` con el diseñador; partidas a mano | decisiones confirmadas |
 | **M4 · Equilibrio** | Simulador e informe; módulos de la v2.1 | primer informe |
