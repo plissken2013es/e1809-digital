@@ -198,6 +198,18 @@ textarea { width: 100%; font: 12px/1.4 var(--mono); resize: vertical; }
 .die.pair-bad { background: #f3c9c9; }
 .combat-line { font-size: 13px; color: #d7d1c6; margin: 0 0 4px; }
 
+.summary { margin: 0 0 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+.summary summary { cursor: pointer; font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+.summary .log { max-height: 180px; margin-top: 6px; }
+
+/* hotseat: the screen handed to the next player */
+.handoff { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at center, #1f2a3d 0%, var(--bg) 70%); }
+.handoff-card { width: min(520px, 100%); padding: 28px; border-radius: 12px; background: var(--surface); border: 2px solid var(--line); text-align: center; box-shadow: 0 20px 60px #000c; }
+.handoff-card.fr { border-color: var(--fr); }
+.handoff-card.gb { border-color: var(--gb); }
+.handoff-card h1 { font: 800 28px/1.15 var(--serif); margin: 0 0 10px; }
+.handoff-card button { margin: 14px 0 6px; font-size: 16px; padding: 10px 18px; }
+
 /* ------------------------------------------------------------ hands, market, log */
 
 .hand-hidden { display: flex; gap: 4px; }

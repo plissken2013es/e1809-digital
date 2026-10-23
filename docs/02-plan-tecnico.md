@@ -69,9 +69,12 @@ Las mismas que en Witch Hunter:
 - **Pantalla:** a la izquierda, el mapa ilustrado con las fichas (bloques y discos en sus casillas impresas, cubos de control en Elviña y Palavea, Moore con su Senda), y debajo los dos ejércitos (moral con la zona de test marcada, fichas) y los comandantes. A la derecha, la decisión pendiente con el bando que decide y los dados del combate en curso; debajo, cada jugador (cubos, racha, mano, tácticas), el Mercado y el registro.
 - **Bandos:** humano, bot codicioso o bot aleatorio, también a mitad de partida. Los bots se pueden pausar, avanzar de uno en uno o cambiar de velocidad.
 - **Información oculta:** con un solo humano se ve su mano; con dos (hotseat), solo la del que decide. Depuración → «Ver las dos manos».
+- **Preguntas automáticas** (barra superior): «Saltar ventanas sin cartas» (por defecto) pasa solas las ventanas de tácticas en las que solo se podría descartar 3; «Solo decisiones importantes» además no evita descartes del Mercado y roba la carta de arriba; «Preguntar todo» no responde nada solo.
+- **Repetición** de cada respuesta, paso a paso, con las pausas (`beat`) del motor: turno, carta jugada, tirada, resultado, test de moral, riesgo y muerte de Moore (normal, lenta, rápida, con botón «Siguiente» o sin repetición). Al volver a un humano, «Lo que acaba de pasar» resume el registro desde la última decisión de un humano.
+- **Hotseat:** con dos humanos, una pantalla «Pasa el dispositivo» cada vez que cambia el jugador que decide (se puede desactivar).
 - **Deshacer** vuelve a la última decisión de un humano (con el suelo anti-trampas de la sesión); Depuración permite volver a cualquier decisión.
 - **Móvil:** una columna, con la decisión fija abajo. La versión cuidada para móvil es parte de M5.
-- **Pendiente:** animaciones y repetición paso a paso de lo que hacen los bots (como en Witch Hunter), aviso de «pasa el dispositivo» en hotseat y pasar automáticamente las ventanas de tácticas.
+- **Pendiente:** animaciones de las fichas y las cartas (como `anim.js` de Witch Hunter).
 
 ## 5. Equilibrio (M4)
 

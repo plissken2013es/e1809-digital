@@ -13,6 +13,11 @@ import { createRandomBot } from '../ai/randomBot.js';
 import { BOT_SPEEDS } from './setup.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
+/** Replay of what happened in each answer (Session frames): ms per step; step: wait for "Siguiente"; off: no replay. */
+const REPLAY_MS = { slow: 1700, normal: 950, fast: 400, step: null, off: 0 };
+export const REPLAYS = [['normal', 'Repetición normal'], ['slow', 'Repetición lenta'], ['fast', 'Repetición rápida'], ['step', 'Repetición paso a paso'], ['off', 'Sin repetición']];
+/** Which routine questions of a human are answered by themselves (autoAnswer). */
+export const AUTO = [['useful', 'Saltar ventanas sin cartas'], ['minimal', 'Solo decisiones importantes'], ['all', 'Preguntar todo']];
 const [W, H] = BOARD.size;
 const SIDES = ['french', 'british'];
 const CODE = { french: 'fr', british: 'gb' };
@@ -20,6 +25,20 @@ const SIDE_TITLE = { french: 'Francés', british: 'Británico' };
 
 const at = ([x, y]) => ({ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` });
 const center = (b) => [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
+
+/** What a replay step shows (the beats of the engine: ask.js beat). */
+function beatText(b) {
+    switch (b.kind) {
+        case 'turn': return `Turno ${b.side === 'french' ? 'francés' : 'británico'}`;
+        case 'card': return `Se juega ${cardLabel(b.card)}`;
+        case 'roll': return `Tirada: ${b.dice.join(' · ')}`;
+        case 'results': return `Resultado: ${describe(b.results)}`;
+        case 'morale': return `Test de moral de ${UNITS[b.unit].name}: sale ${b.roll} contra ${b.limit}, ${b.ok ? 'aguanta' : 'falla'}`;
+        case 'moore_risk': return `Tirada de riesgo de Moore: ${b.dice[0]} + ${b.dice[1]} contra ${b.track}${b.fell ? ': ¡cae abatido!' : ': sale ileso'}`;
+        case 'moore_dead': return 'Muere Sir John Moore';
+        default: return b.kind;
+    }
+}
 
 /** Image of whatever an option or a token refers to. */
 function refImage(ref) {
@@ -35,14 +54,24 @@ export class GameView {
     /**
      * @param {HTMLElement} root
      * @param {import('../engine/session.js').Session} session
-     * @param {{ build: string, players: Record<string, string>, speed?: string, notice?: string, onExit: Function, save: Function, saveSpeed?: Function }} opts
+     * @param {{ build: string, players: Record<string, string>, ui?: any, notice?: string, onExit: Function, save: Function, saveUi?: Function }} opts
      */
     constructor(root, session, opts) {
         this.root = root;
         this.session = session;
         this.opts = opts;
         this.players = { french: 'human', british: 'human', ...opts.players };
-        this.speed = BOT_MS[opts.speed] !== undefined ? opts.speed : 'normal';
+        const ui = opts.ui ?? {};
+        /** speed: bots; replay: steps of each answer; auto: routine questions; handoff: "pass the device" screen */
+        this.ui = {
+            speed: BOT_MS[ui.speed] !== undefined ? ui.speed : 'normal',
+            replay: REPLAY_MS[ui.replay] !== undefined ? ui.replay : 'normal',
+            auto: AUTO.some(([v]) => v === ui.auto) ? ui.auto : 'useful',
+            handoff: ui.handoff ?? true,
+        };
+        this.playback = null; // { frames, i, timer }: replay of the last answer
+        this.mark = session.state.log.length; // log entries since the last human decision are summarised
+        this.shownSide = null; // hotseat: the side the screen was handed to
         this.paused = false;
         this.revealAll = false;
         this.selection = new Set();
@@ -71,13 +100,24 @@ export class GameView {
 
     dispose() {
         clearTimeout(this.timer);
+        if (this.playback) clearTimeout(this.playback.timer);
         document.removeEventListener('keydown', this.onKey);
         this.preview.remove();
         this.dialog.remove();
     }
 
+    /** The state on screen: a step of the replay, else the live one. */
     get g() {
-        return this.session.state;
+        const pb = this.playback;
+        if (!pb) return this.session.state;
+        const f = pb.frames[pb.i];
+        return (f.view ??= { ...f.state, log: this.session.state.log.slice(0, f.logLen), pending: null });
+    }
+
+    setUi(key, value) {
+        this.ui[key] = value;
+        this.opts.saveUi?.(this.ui);
+        this.render();
     }
 
     isBot(side) {
@@ -95,19 +135,82 @@ export class GameView {
 
     // ------------------------------------------------------------ actions
 
-    act(answer) {
+    /** auto: an answer given by autoAnswer, which does not start a new summary. */
+    act(answer, { auto = false } = {}) {
         clearTimeout(this.timer);
+        this.stopPlayback();
+        const p = this.session.state.pending;
+        const logStart = this.session.state.log.length;
         try {
-            this.session.act(answer);
+            this.session.act(answer, { capture: this.ui.replay !== 'off' });
             this.error = null;
         } catch (err) {
             if (err instanceof IllegalAction) return this.toast(err.message);
             this.error = err;
             console.error(err);
         }
+        if (p && !this.isBot(p.side) && !auto) this.mark = logStart;
         this.selection.clear();
         this.opts.save(this.session, this.players);
+        const frames = this.session.frames;
+        if (frames.length && !this.error) this.startPlayback(frames);
+        else this.render();
+    }
+
+    /**
+     * Routine questions answered for a human (ui.auto): tactic windows where no card can be
+     * played (only discarding 3 is offered); with "minimal", also preventing a market discard
+     * (no) and the card to draw (the top one).
+     */
+    autoAnswer(p) {
+        if (!p || this.isBot(p.side) || this.ui.auto === 'all') return null;
+        if (p.kind === 'tactic' && p.options.every((o) => o.id === 'pass' || o.id === 'discard3')) return 'pass';
+        if (this.ui.auto === 'minimal') {
+            if (p.kind === 'prevent') return 'no';
+            if (p.kind === 'draw') return 'top';
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------ replay
+
+    startPlayback(frames) {
+        this.playback = { frames, i: 0, timer: null };
+        this.showStep();
+    }
+
+    showStep() {
+        const pb = this.playback;
+        clearTimeout(pb.timer);
         this.render();
+        const ms = REPLAY_MS[this.ui.replay];
+        if (ms) pb.timer = setTimeout(() => this.nextStep(), ms);
+    }
+
+    nextStep() {
+        const pb = this.playback;
+        if (!pb) return;
+        if (pb.i + 1 >= pb.frames.length) return this.endPlayback();
+        pb.i++;
+        this.showStep();
+    }
+
+    stopPlayback() {
+        if (this.playback) clearTimeout(this.playback.timer);
+        this.playback = null;
+    }
+
+    endPlayback() {
+        this.stopPlayback();
+        this.render();
+    }
+
+    /** Hotseat: a new player must take the device before the screen shows his hand. */
+    needsHandoff() {
+        const p = this.session.state.pending;
+        if (!this.ui.handoff || this.playback || this.revealAll || !p || this.session.over) return false;
+        if (SIDES.some((s) => this.isBot(s)) || this.autoAnswer(p)) return false;
+        return this.shownSide !== p.side;
     }
 
     botStep() {
@@ -124,11 +227,19 @@ export class GameView {
         this.act(answer);
     }
 
-    scheduleBot() {
+    /** After each render: the bot's answer or an automatic one, unless a replay is on. */
+    scheduleNext() {
         clearTimeout(this.timer);
-        const p = this.g.pending;
-        if (!p || this.session.over || this.error || this.paused || !this.isBot(p.side)) return;
-        const ms = BOT_MS[this.speed];
+        if (this.playback) return;
+        const p = this.session.state.pending;
+        if (!p || this.session.over || this.error) return;
+        const auto = this.autoAnswer(p);
+        if (auto) {
+            this.timer = setTimeout(() => this.act(auto, { auto: true }), 0);
+            return;
+        }
+        if (this.paused || !this.isBot(p.side)) return;
+        const ms = BOT_MS[this.ui.speed];
         if (ms == null) return;
         this.timer = setTimeout(() => this.botStep(), ms);
     }
@@ -137,6 +248,7 @@ export class GameView {
     undo() {
         if (!this.session.canUndo) return this.toast('No se puede deshacer más: la última decisión tiró dados, robó o barajó.');
         clearTimeout(this.timer);
+        this.stopPlayback();
         this.session.undo(1);
         while (this.session.canUndo && this.g.pending && this.isBot(this.g.pending.side)) this.session.undo(1);
         this.paused = SIDES.some((s) => this.isBot(s));
@@ -165,6 +277,10 @@ export class GameView {
         const logScroll = this.root.querySelector('.log');
         const atBottom = !logScroll || logScroll.scrollTop + logScroll.clientHeight >= logScroll.scrollHeight - 30;
         this.preview.classList.remove('show');
+        if (this.needsHandoff()) {
+            this.root.replaceChildren(this.handoffScreen());
+            return;
+        }
         this.root.replaceChildren(h(
             'div.game', null,
             this.topbar(),
@@ -173,7 +289,25 @@ export class GameView {
         ));
         const log = this.root.querySelector('.log');
         if (log && atBottom) log.scrollTop = log.scrollHeight;
-        this.scheduleBot();
+        this.scheduleNext();
+    }
+
+    handoffScreen() {
+        const side = this.session.state.pending.side;
+        return h(
+            'div.handoff', null,
+            h(`div.handoff-card.${CODE[side]}`, null,
+                h('p.kicker', null, 'Partida a dos en la misma pantalla'),
+                h('h1', null, `Le toca decidir al ${SIDE_NAME[side]}`),
+                h('p', null, 'Pasa el dispositivo. La pantalla muestra la mano del jugador que decide.'),
+                h('button.primary', {
+                    onclick: () => {
+                        this.shownSide = side;
+                        this.render();
+                    },
+                }, `Soy el ${SIDE_NAME[side]}: continuar`),
+                h('p.hint', null, h('label', null, h('input', { type: 'checkbox', checked: true, onchange: (e) => this.setUi('handoff', e.target.checked) }), ' Avisar en cada cambio de jugador'))),
+        );
     }
 
     topbar() {
@@ -181,14 +315,9 @@ export class GameView {
         const pend = g.pending;
         const botsExist = SIDES.some((s) => this.isBot(s));
         const botTurn = pend && this.isBot(pend.side) && !this.session.over;
-        const speedSel = h('select', {
-            title: 'Velocidad de los bots',
-            onchange: (e) => {
-                this.speed = e.target.value;
-                this.opts.saveSpeed?.(this.speed);
-                this.render();
-            },
-        }, BOT_SPEEDS.map(([v, l]) => h('option', { value: v, selected: v === this.speed }, l)));
+        const sel = (key, list, title) => h('select', { title, onchange: (e) => this.setUi(key, e.target.value) },
+            list.map(([v, l]) => h('option', { value: v, selected: v === this.ui[key] }, l)));
+        const speedSel = sel('speed', BOT_SPEEDS.map(([v, l]) => [v, `Bots: ${l.toLowerCase()}`]), 'Velocidad de los bots');
         return h(
             'header.topbar', null,
             h('span.brand', null, 'Elviña 1809'),
@@ -205,8 +334,10 @@ export class GameView {
                     this.render();
                 },
             }, this.paused ? '▶ Seguir bots' : '⏸ Pausar bots'),
-            botTurn && (this.paused || this.speed === 'step') && h('button.small', { onclick: () => this.botStep() }, 'Paso del bot'),
+            botTurn && !this.playback && (this.paused || this.ui.speed === 'step') && h('button.small', { onclick: () => this.botStep() }, 'Paso del bot'),
             botsExist && speedSel,
+            sel('replay', REPLAYS, 'Cómo se repite lo que pasa en cada decisión'),
+            sel('auto', AUTO, 'Preguntas rutinarias que se responden solas'),
             h('button.small', { onclick: () => this.copyCode() }, 'Copiar código'),
             h('button.small', { onclick: () => this.openDebug() }, 'Depuración'),
             h('button.small', { onclick: () => this.opts.onExit() }, 'Menú'),
@@ -373,6 +504,7 @@ export class GameView {
     // ------------------------------------------------------------ side panel
 
     decisionPanel() {
+        if (this.playback) return this.playbackPanel();
         const g = this.g;
         const p = g.pending;
         const out = [];
@@ -383,12 +515,13 @@ export class GameView {
             out.push(h('button.primary', { onclick: () => this.opts.onExit() }, 'Nueva partida'));
         }
         if (g.combat) out.push(this.combatBox());
+        if (p && !this.session.over && !this.isBot(p.side)) out.push(this.summary());
         if (p && !this.session.over) {
             const bot = this.isBot(p.side);
             out.push(h(`span.who.${CODE[p.side]}${bot ? '.bot' : ''}`, null, `Decide: ${SIDE_TITLE[p.side]}`));
             out.push(h('p.prompt', null, p.prompt));
             if (bot) {
-                out.push(h('p.bot-wait', null, this.paused || this.speed === 'step' ? 'Bot en pausa: pulsa «Paso del bot» o «Seguir bots».' : 'El bot está pensando…'));
+                out.push(h('p.bot-wait', null, this.paused || this.ui.speed === 'step' ? 'Bot en pausa: pulsa «Paso del bot» o «Seguir bots».' : 'El bot está pensando…'));
             } else if (p.type === 'choose') {
                 out.push(h('div.opts', null, p.options.map((o) => {
                     const b = h(`button${o.id === 'pass' || o.id === 'none' ? '.ghost' : ''}`, { onclick: () => this.act(o.id), title: o.hint ?? null }, o.label);
@@ -419,6 +552,32 @@ export class GameView {
             }
         }
         return h('section.decision', { 'aria-live': 'polite' }, out);
+    }
+
+    /** One step of the replay: what happened, the dice, and buttons to go on. */
+    playbackPanel() {
+        const pb = this.playback;
+        const f = pb.frames[pb.i];
+        const g = this.g;
+        const side = f.beat.side ?? g.active;
+        return h(
+            'section.decision', { 'aria-live': 'polite' },
+            h(`span.who.${CODE[side]}`, null, `Repetición ${pb.i + 1}/${pb.frames.length}`),
+            h('p.prompt', null, beatText(f.beat)),
+            g.combat && this.combatBox(),
+            h('div.confirm', null,
+                h('button.primary', { onclick: () => this.nextStep() }, pb.i + 1 < pb.frames.length ? 'Siguiente' : 'Terminar'),
+                h('button.ghost', { onclick: () => this.endPlayback() }, 'Saltar la repetición')),
+        );
+    }
+
+    /** What happened since the last decision of a human (the bot's turn, the results of his answer). */
+    summary() {
+        const lines = this.session.state.log.slice(this.mark).filter((l) => l.kind !== 'phase' || l.text.startsWith('Ronda'));
+        if (!lines.length) return null;
+        return h('details.summary', { open: true },
+            h('summary', null, `Lo que acaba de pasar (${lines.length})`),
+            h('div.log', null, lines.slice(-30).map((l) => h(`p.${l.kind}`, null, l.text))));
     }
 
     combatBox() {

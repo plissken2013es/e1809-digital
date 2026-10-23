@@ -34,12 +34,13 @@ function save(session, players) {
     else store.set(SAVE_KEY, { setup: session.setup, answers: session.answers, round: session.state.roundNo, players });
 }
 
-function play(session, players, speed, notice) {
+/** ui: { speed, replay, auto, handoff } (view.js), kept in the preferences. */
+function play(session, players, ui, notice) {
     view?.dispose();
     view = new GameView(root, session, {
-        build: BUILD, players, speed, notice, onExit: showSetup,
+        build: BUILD, players, ui, notice, onExit: showSetup,
         save: (s, who) => save(s, who),
-        saveSpeed: (sp) => store.set(PREFS_KEY, { ...store.get(PREFS_KEY), speed: sp }),
+        saveUi: (u) => store.set(PREFS_KEY, { ...store.get(PREFS_KEY), ui: u, speed: u.speed }),
     });
     if (new URLSearchParams(location.search).has('debug')) window.e18 = view;
 }
@@ -53,19 +54,20 @@ function showSetup() {
         prefs,
         saved: saved && { round: saved.round, answers: saved.answers.length },
         onStart(setup, players, speed) {
-            store.set(PREFS_KEY, { setup, players, speed });
+            const ui = { ...prefs.ui, speed };
+            store.set(PREFS_KEY, { ...prefs, setup, players, speed, ui });
             const s = new Session(setup);
             save(s, players);
-            play(s, players, speed);
+            play(s, players, ui);
         },
         onContinue() {
             const players = saved.players ?? prefs.players;
             try {
-                play(new Session(saved.setup, saved.answers), players, prefs.speed);
+                play(new Session(saved.setup, saved.answers), players, prefs.ui);
             } catch (err) {
                 // the engine changed since the game was saved: keep what still replays
                 const { session, failedAt } = replayRecord({ setup: saved.setup, answers: saved.answers });
-                play(session, players, prefs.speed, `La partida guardada ya no se repite entera (se para en la decisión ${failedAt + 1}): ${err.message}`);
+                play(session, players, prefs.ui, `La partida guardada ya no se repite entera (se para en la decisión ${failedAt + 1}): ${err.message}`);
             }
         },
         async onLoadCode(code, _players, speed) {
@@ -75,7 +77,7 @@ function showSetup() {
             if (failedAt != null) notice = `El motor ha cambiado: la repetición se para en la decisión ${failedAt + 1} (${error}).`;
             else if (!matches) notice = 'Repetida, pero el estado final no coincide con la grabación: el motor ha cambiado.';
             // a loaded game is for looking at: both sides human, so no bot plays on by itself
-            play(session, { french: 'human', british: 'human' }, speed, notice);
+            play(session, { french: 'human', british: 'human' }, { ...prefs.ui, speed }, notice);
         },
     });
 }
