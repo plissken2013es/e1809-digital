@@ -47,7 +47,7 @@ src/engine/
   game.js      preparación, opciones de reglas, escenario de depuración, bucle de rondas
   session.js   Session y códigos E18.
 src/ai/        randomBot y greedyBot (y el automa oficial si aparece su material, docs/01 §13)
-src/ui/        (M2) app.js, view.js (mapa, tarjetas, mano, mercado, registro, depuración)
+src/ui/        app.js (arranque, guardado), setup.js (bandos, reglas, escenario, códigos), view.js (mapa, ejércitos, manos, mercado, dados, registro, depuración)
 ```
 
 Detalles del motor:
@@ -64,7 +64,16 @@ Las mismas que en Witch Hunter:
 - **Deshacer** con suelo anti-trampas y **viaje en el tiempo** en Debug.
 - **Códigos de partida** y `tools/replay.mjs`.
 
-## 4. Equilibrio (M4)
+## 4. Interfaz (M2)
+
+- **Pantalla:** a la izquierda, el mapa ilustrado con las fichas (bloques y discos en sus casillas impresas, cubos de control en Elviña y Palavea, Moore con su Senda), y debajo los dos ejércitos (moral con la zona de test marcada, fichas) y los comandantes. A la derecha, la decisión pendiente con el bando que decide y los dados del combate en curso; debajo, cada jugador (cubos, racha, mano, tácticas), el Mercado y el registro.
+- **Bandos:** humano, bot codicioso o bot aleatorio, también a mitad de partida. Los bots se pueden pausar, avanzar de uno en uno o cambiar de velocidad.
+- **Información oculta:** con un solo humano se ve su mano; con dos (hotseat), solo la del que decide. Depuración → «Ver las dos manos».
+- **Deshacer** vuelve a la última decisión de un humano (con el suelo anti-trampas de la sesión); Depuración permite volver a cualquier decisión.
+- **Móvil:** una columna, con la decisión fija abajo. La versión cuidada para móvil es parte de M5.
+- **Pendiente:** animaciones y repetición paso a paso de lo que hacen los bots (como en Witch Hunter), aviso de «pasa el dispositivo» en hotseat y pasar automáticamente las ventanas de tácticas.
+
+## 5. Equilibrio (M4)
 
 `tools/simulate.mjs`: miles de partidas bot contra bot, combinando bots y opciones de reglas. Informe por bando:
 - % de victorias y forma de ganar (2 Divisiones / evacuación).
@@ -74,15 +83,15 @@ Las mismas que en Witch Hunter:
 
 Sirve para responder, por ejemplo, si la Bayoneta como ±1 desequilibra, cuánto pesa la Senda del Sacrificio o qué cambia con las ideas de la v2.1.
 
-## 5. Hoja de ruta
+## 6. Hoja de ruta
 
-**Estado:** M0 ✅ · M1 ✅ · M2–M5 pendientes.
+**Estado:** M0 ✅ · M1 ✅ · M2 ✅ (primera versión) · M3–M5 pendientes.
 
 | Hito | Contenido | Hecho cuando |
 |---|---|---|
 | **M0 · Datos** | Imágenes (cartas, tarjetas, mapa ilustrado), textos de tácticas desde el PDF, tarjetas curadas a mano, posiciones del tablero; docs/01 con las decisiones `[D-n]` | ✅ 2026-10-23 |
 | **M1 · Motor de 2 jugadores** | Todas las reglas de la v1.6c, las 36 tácticas, Moore y Soult, opciones de reglas; bots aleatorio y codicioso; tests por regla y simulación con invariantes | ✅ 2026-10-23: 30 tests; 6.000 partidas simuladas con todas las opciones, sin errores |
-| **M2 · Prototipo de depuración** | Interfaz sobre el mapa, hotseat, escenario, deshacer, códigos, replay | partida jugable a mano |
+| **M2 · Prototipo de depuración** | Interfaz sobre el mapa, hotseat, escenario, deshacer, códigos, replay | ✅ 2026-10-24, primera versión: partidas a mano y bot contra bot en el navegador, sin errores |
 | **M3 · Revisión de reglas** | Repasar las decisiones `[D-n]` con el diseñador; partidas a mano | decisiones confirmadas |
 | **M4 · Equilibrio** | Simulador e informe; módulos de la v2.1 | primer informe |
 | **M5 · Solitario y móvil** | Automa oficial (si aparece el material) y app Android | — |

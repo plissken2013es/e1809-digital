@@ -25,7 +25,7 @@ export function* mooreRisk(g, steps, cause, { rally = false } = {}) {
     const a = rollDie(g);
     const b = rollDie(g);
     const fell = a + b < m.track;
-    log(g, `Tirada de riesgo de Moore: ${a} + ${b} = ${a + b} contra ${m.track}: ${fell ? '¡Moore cae abatido!' : 'sale ileso'}.`, fell ? 'bad' : 'good');
+    log(g, `Tirada de riesgo de Moore: ${a} + ${b} = ${a + b} contra ${m.track}: ${fell ? '¡Moore cae abatido!' : 'sale ileso.'}`, fell ? 'bad' : 'good');
     yield* beat(g, 'moore_risk', { dice: [a, b], track: m.track, fell });
     if (!fell) return true;
     if (cause === 'artillery') {

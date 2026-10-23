@@ -6,7 +6,8 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 
 - ✅ M0 datos: tarjetas, cartas y mapa → `src/data/*.json` + `assets/`; reglas y decisiones `[D-n]` en docs/01 (2026-10-23)
 - ✅ M1 motor de 2 jugadores: todas las reglas de la v1.6c, 36 tácticas, Moore, Soult, opciones de reglas, bots aleatorio y codicioso (2026-10-23)
-- ⏳ M2 interfaz · M3 revisión de reglas · M4 equilibrio · M5 solitario y móvil
+- ✅ M2 interfaz, primera versión: mapa con fichas, ejércitos, manos, Mercado, dados, bots por bando, deshacer, códigos y depuración (2026-10-24)
+- ⏳ M3 revisión de reglas · M4 equilibrio · M5 solitario y móvil
 
 ## Documentos (leer antes de tocar reglas o código)
 
@@ -30,7 +31,8 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 - Las funciones de state.js no preguntan (no son generadores); las que pueden preguntar (morale, commanders, combat, tactics, turn) sí.
 - **Tácticas:** cada carta en `RULES` de tactics.js (`can` + `play`), ofrecida por `tacticWindow(g, punto, ctx)` según su `window` (docs/01 §11.1). *Reagrupación* va en morale.js, *A sangre y fuego* en las órdenes (turn.js) y *Los hombres están agotados* en `rerollCubeCost`.
 - `Session` (session.js) = setup + respuestas: deshacer (con suelo en la última respuesta que movió el PRNG), rebobinar, códigos `E18.` y `node tools/replay.mjs fichero --state --decisions`.
-- Servir con `python tools/serve.py 8012` (sin caché; está en `.claude/launch.json`).
+- Servir con `python tools/serve.py 8012` (sin caché; está en `.claude/launch.json`). `?debug` en la URL expone la vista como `window.e18`.
+- **Interfaz** (`src/ui/`): `app.js` (arranque, guardado en `localStorage` `e18-save`, preferencias en `e18-prefs`), `setup.js` (bandos humano/bot, opciones de reglas, escenario, cargar código) y `view.js` (`GameView`: se repinta entera tras cada respuesta). Cada bando puede ser humano o bot (`createGreedyBot` / `createRandomBot`); los bots responden solos con un retardo (`BOT_MS`) y se pueden pausar o avanzar paso a paso. Las opciones con `ref` (unidad, plaza, carta) se pueden elegir también pulsando en el mapa, en la fila de la unidad o en la carta; los dados, al elegir cuáles relanzar. Mano visible: la del humano (con dos humanos, solo la del que decide); «Ver las dos manos» en Depuración.
 
 ## Datos
 
