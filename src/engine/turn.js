@@ -49,8 +49,9 @@ export function* playTurn(g, side) {
     }
 
     yield* reorganization(g, side);
-    // Moore felled by a British action leaves at the end of the turn [D-7, D-46]
-    if (g.moore.status === 'dying') yield* mooreDies(g, 'herido en combate');
+    // Moore felled by a British action leaves at the end of the British turn: this one,
+    // or the next one if he fell rallying during the French turn [D-7, D-46]
+    if (g.moore.status === 'dying' && side === 'british') yield* mooreDies(g, 'herido en combate');
 }
 
 /** Adds a played card to the streak; 3 in a row with the same cubes give +2 [§9, D-23]. */

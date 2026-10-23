@@ -110,6 +110,48 @@ test("Moore's rally (card): two steps, risk roll, then 1d6 of 1–5 [D-2]", () =
     assert.equal(s.state.units.bentinck.status, 'routed');
 });
 
+test('Moore felled rallying in the French turn stays until the end of the next British turn [D-46, D-49]', () => {
+    // track 5 → 6 with the rally; risk 1 + 1 < 6: he falls, Bentinck routs
+    const s = game({ ...bentinckScenario([4, 4, 1, 2, 3, 5, 6, 1, 1]), moore: { track: 5 } });
+    mermetHitsBentinck(s);
+    until(s, 'Planificación', passive);
+    assert.equal(s.pending.side, 'british');
+    assert.equal(s.state.moore.status, 'dying');
+    assert.equal(s.state.units.bentinck.status, 'routed');
+    until(s, 'Muerte de Moore', passive);
+    assert.equal(s.state.active, 'british', 'removed at the end of the British turn');
+    assert.equal(s.state.turnNo, 2);
+});
+
+test('tactic windows go back and forth, one card at a time, until both pass [D-50]', () => {
+    const s = game({ hands: { french: ['mermet-1', 'merle-1', 'delaborde-1'], british: BRITISH_HAND }, tactics: { french: ['curtido_en_mil_batallas', 'cambio_de_tornas'], british: ['rumores_de_muerte', 'reorganizacion'] } });
+    answer(s, 'Jugar CURTIDO');
+    assert.deepEqual([s.pending.side, s.pending.prompt], ['british', 'Tácticas (inicio del turno francés)']);
+    answer(s, 'Jugar RUMORES');
+    for (let i = 0; i < 3; i++) answer(s, 'Mermet');
+    assert.deepEqual([s.pending.side, s.pending.prompt], ['french', 'Tácticas (inicio del turno francés)'], 'the French answer back');
+});
+
+test('3 tactics can be discarded for 3 cubes in any tactic window [D-47]', () => {
+    const s = game({ hands: { french: ['mermet-1', 'merle-1', 'delaborde-1'], british: BRITISH_HAND }, tactics: { french: ['concentracion', 'vacilacion', 'a_cubierto'] } });
+    assert.equal(s.pending.prompt, 'Tácticas (inicio del turno francés)');
+    answer(s, 'discard3'); // with exactly 3 tactics the choice answers itself
+    assert.equal(s.state.players.french.cubes, 2 + 3);
+    assert.deepEqual(s.state.players.french.tactics, []);
+});
+
+test('«En cualquier momento» cards can be played before a morale test [D-50]', () => {
+    // Hill 6 → 4; Reorganización takes it to 5 before rolling a 5
+    const s = game({ ...hillScenario({ dice: [4, 4, 5, 5, 1, 2, 5] }), tactics: { british: ['reorganizacion'] } });
+    until(s, 'Planificación', passive);
+    answer(s, 'Delaborde');
+    until(s, 'Tácticas (test de moral)', passive);
+    answer(s, 'Jugar REORGANIZACIÓN');
+    until(s, 'Planificación', passive);
+    assert.equal(s.state.units.hill.status, 'in');
+    assert.equal(s.state.units.hill.morale, 5);
+});
+
 test('the Artillery fires on Moore at #1: he dies at once and the British lose 3 morale [§8.1, D-7, D-8]', () => {
     const s = game({ hands: { french: ['artilleria-1', 'merle-1', 'mermet-1'], british: BRITISH_HAND }, dice: [1, 1, 2, 3, 4] });
     until(s, 'Planificación', passive);

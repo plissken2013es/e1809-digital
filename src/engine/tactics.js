@@ -11,8 +11,8 @@ import {
 import { moraleTest, distributeMoraleLoss, loseMorale, testAfterLoss, canRaise } from './morale.js';
 import { artilleryCombat, modifyDie, rerollOne } from './combat.js';
 
-/** Points of the turn where «en cualquier momento» cards are offered [D-32]. */
-const ANY_POINTS = new Set(['french_turn_start', 'before_planning', 'planning', 'before_combat', 'after_roll', 'after_combat', 'reorganization']);
+/** Points where «en cualquier momento» cards are offered: every tactic window [D-32, D-50]. */
+const ANY_POINTS = new Set(['french_turn_start', 'before_planning', 'planning', 'before_combat', 'after_roll', 'after_combat', 'reorganization', 'morale_test', 'casualties']);
 
 /** Does a card with this window fit this point for `side`? (§11.1) */
 function fits(window, point, side, g, ctx) {
@@ -50,23 +50,48 @@ export function playable(g, side, point, ctx = {}) {
 }
 
 /**
- * A window to play tactics: first the active player, then the other; each may
- * play several before passing [§11.1].
+ * A window to play tactics [§11.1, D-50]: the players take turns, one card at a
+ * time, starting with the active player, until both pass in a row. A player with
+ * nothing to play passes without being asked. Discarding 3 tactics for cubes is
+ * also offered here, since it can be done at any time [D-47].
  */
 export function* tacticWindow(g, point, ctx = {}) {
-    for (const side of [g.active, enemyOf(g.active)]) {
-        for (;;) {
-            const list = playable(g, side, point, ctx);
-            if (!list.length) break;
-            const opts = list.map((id) => ({ id, label: `Jugar ${TACTICS[id].name}`, ref: id, hint: TACTICS[id].text }));
-            opts.push({ id: 'pass', label: 'No jugar ninguna' });
-            const a = yield* choose(g, side, `Tácticas (${POINT_NAME[point]})`, opts, { kind: 'tactic', point });
-            if (a === 'pass') break;
-            discardTactic(g, side, a);
-            log(g, `El ${SIDE_NAME[side]} juega ${TACTICS[a].name}.`, side);
-            yield* RULES[a].play(g, side, ctx);
+    let side = g.active;
+    let passes = 0;
+    while (passes < 2) {
+        const list = playable(g, side, point, ctx);
+        const canDiscard = g.players[side].tactics.length >= 3;
+        if (!list.length && !canDiscard) {
+            passes++;
+            side = enemyOf(side);
+            continue;
         }
+        const opts = list.map((id) => ({ id, label: `Jugar ${TACTICS[id].name}`, ref: id, hint: TACTICS[id].text }));
+        if (canDiscard) opts.push({ id: 'discard3', label: `Descartar 3 tácticas por ${g.rules.discardThreeTactics} cubos` });
+        opts.push({ id: 'pass', label: 'No jugar ninguna' });
+        const a = yield* choose(g, side, `Tácticas (${POINT_NAME[point]})`, opts, { kind: 'tactic', point });
+        if (a === 'pass') {
+            passes++;
+        } else {
+            passes = 0;
+            if (a === 'discard3') {
+                yield* discardThree(g, side);
+            } else {
+                discardTactic(g, side, a);
+                log(g, `El ${SIDE_NAME[side]} juega ${TACTICS[a].name}.`, side);
+                yield* RULES[a].play(g, side, ctx);
+            }
+        }
+        side = enemyOf(side);
     }
+}
+
+/** Discards 3 tactics of `side` for 3 cubes (2 with the v2.1 option) [§11, D-30, D-47]. */
+function* discardThree(g, side) {
+    const p = g.players[side];
+    const ids = yield* pick(g, side, '¿Qué 3 tácticas descartas?', p.tactics.map((id, i) => ({ id: `${i}`, label: TACTICS[id].name, ref: id })), 3, 3, { kind: 'discard3' });
+    for (const id of ids.map((i) => p.tactics[Number(i)])) discardTactic(g, side, id);
+    gainCubes(g, side, g.rules.discardThreeTactics, 'descarte de 3 tácticas');
 }
 
 const POINT_NAME = {
@@ -367,17 +392,10 @@ export function* market(g, side) {
                 if (t.cost <= p.cubes) opts.push({ id: `buy:${i}`, label: `Comprar ${t.name} (${t.cost}${slot.cubes ? `, con ${slot.cubes} cubos encima` : ''})`, ref: slot.id });
             });
         }
-        if (p.tactics.length >= 3) opts.push({ id: 'discard3', label: `Descartar 3 tácticas por ${g.rules.discardThreeTactics} cubos` });
         if (!opts.length) break;
-        opts.push({ id: 'none', label: g.turn.bought ? 'Seguir' : 'No comprar' });
+        opts.push({ id: 'none', label: 'No comprar' });
         const a = yield* choose(g, side, 'Mercado de Táctica', opts, { kind: 'market' });
         if (a === 'none') break;
-        if (a === 'discard3') {
-            const ids = yield* pick(g, side, '¿Qué 3 tácticas descartas?', p.tactics.map((id, i) => ({ id: `${i}`, label: TACTICS[id].name, ref: id })), 3, 3, { kind: 'discard3' });
-            for (const id of ids.map((i) => p.tactics[Number(i)])) discardTactic(g, side, id);
-            gainCubes(g, side, g.rules.discardThreeTactics, 'descarte de 3 tácticas');
-            continue;
-        }
         const i = Number(a.split(':')[1]);
         const [slot] = m.row.splice(i, 1);
         buy(g, side, slot.id, slot.cubes);

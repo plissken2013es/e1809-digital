@@ -62,7 +62,7 @@ export function createGreedyBot(seed = 'greedy', state = () => null, { soultChan
                 });
             }
             case 'tactic':
-                return ids.find((id) => id !== 'pass') ?? 'pass';
+                return ids.find((id) => id !== 'pass' && id !== 'discard3') ?? 'pass';
             case 'moore_move': {
                 const want = req.ref && moorePositionFor(req.ref);
                 if (want && g.moore.track <= 5 && ids.includes(String(want))) return String(want);

@@ -124,7 +124,7 @@ Unidades (`units.json`):
 1. **Mercado** (§11): comprar una táctica, o descartar la de la derecha salvo que alguien lo evite.
 2. **Robar** una carta de Acción hasta tener 3, si quedan en el mazo. Pagando 5 cubos se puede elegir la carta en vez de robarla, y después se baraja el mazo [D-25].
 
-Las tácticas se juegan en sus momentos (§11.1), también en el turno del rival.
+Las tácticas se juegan en sus momentos (§11.1), también en el turno del rival. En cada momento, los jugadores se turnan carta a carta, empezando por el activo, hasta que los dos pasan seguidos [D-50].
 
 ### 5.4 Sin objetivos disponibles
 
@@ -195,7 +195,7 @@ Si la unidad activada no puede cumplir ninguna orden (o ya está eliminada):
   
   La tarjeta pide más (avanzar 2 pasos y, si sobrevive, salvar solo con 1–5 en 1d6); queda como opción `mooreRally: card`.
 - **Muerte de Moore** [D-7]:
-  - **Por acción británica** (movimiento o arenga): su ficha se retira al final del turno británico y su apoyo sigue funcionando hasta entonces, salvo en la arenga fallida.
+  - **Por acción británica** (movimiento o arenga): su ficha se retira al final del turno británico (el siguiente, si cayó arengando en el turno francés) [D-46]. Hasta entonces su apoyo sigue funcionando, salvo si cayó arengando, pero no puede moverse ni arengar [D-49].
   - **Por la Artillería**: se retira al momento.
   - En los dos casos, el británico reparte −3 de moral entre sus unidades con pista de moral, con sus tests.
   - Moore no cuenta como unidad eliminada.
@@ -233,13 +233,13 @@ Un único uso, a elegir entre:
   1. Primero puede evitarlo el **inactivo**: pone 1 cubo de la reserva común sobre cada una de las otras cartas.
   2. Si no lo hace, puede evitarlo el **activo**, pagando 1 cubo de su reserva a la común.
 - Si hay hueco, las cartas se corren a la derecha y se roba una nueva para la izquierda. Si el mazo se acaba, se baraja el descarte.
-- En cualquier momento, descartar 3 tácticas propias da 3 cubos [D-30].
+- En cualquier momento, descartar 3 tácticas propias da 3 cubos [D-30, D-47].
 
 ### 11.1 Momentos de juego (`window` en `tactics.json`)
 
 | Ventana | Texto impreso | Dónde la ofrece el motor |
 |---|---|---|
-| `any` | Jugar en cualquier momento | en todos los puntos de abajo, de los dos jugadores [D-32] |
+| `any` | Jugar en cualquier momento | en todas las ventanas de esta tabla, también antes de un test de moral y tras sufrir bajas, para los dos jugadores [D-32, D-50] |
 | `own_any` | En tu turno, en cualquier momento | en todos los puntos del turno propio |
 | `own_planning` | En la (tu) fase de planificación | tras jugar la carta de Acción, antes de pagar la activación |
 | `own_before_combat` / `enemy_before_combat` | Antes del combate | tras elegir la orden, antes de la primera tirada |
@@ -323,7 +323,7 @@ Reglas de la v1.6c (§7), resumidas:
 
 ## 14. Decisiones para la versión digital
 
-Las marcadas **✔** se revisaron y confirmaron con el usuario el 2026-10-23; el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
+Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, de D-46 a D-52, 2026-10-24); el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
 
 | Id | Hueco o conflicto | Decisión |
 |---|---|---|
@@ -358,7 +358,7 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario el 2026-10-23; el
 | D-29 | ¿Cuándo salva Soult? | Tras cualquier test fallido de una unidad francesa, en cualquier turno. No con moral 0 |
 | D-30 | Mercado: evitar el descarte y descartar 3 tácticas | ✔ Literal v1.6c: el inactivo lo evita gratis poniendo cubos de la reserva común sobre las demás cartas; el activo, pagando 1. Descartar 3 da 3 cubos (la v2.1 decía 2: opción `discardThreeTactics`) |
 | D-31 | ¿Cuándo se puede usar una táctica recién comprada? | En cuanto llegue su momento, también ese mismo turno, salvo *Terreno escarpado*. Varias tácticas en el mismo momento, sí |
-| D-32 | «En cualquier momento» | El motor ofrece las tácticas en puntos fijos (§11.1); no hay interrupciones a mitad de un paso |
+| D-32 | «En cualquier momento» | El motor ofrece las tácticas en puntos fijos (§11.1); no hay interrupciones a mitad de un paso. En cada punto se juega por turnos hasta que los dos pasan (D-50) |
 | D-33 | *Avanzadillas*: «turno enemigo, tras el combate» | Tras una tirada enemiga, antes de aplicarla (después del combate no tendría efecto) |
 | D-34 | Mano inicial | El británico roba 5 y el francés 6; cada uno se queda 3 |
 | D-35 | El reglamento cuenta 15 bloques británicos; el mapa tiene 14 casillas de salida (Hill 3, Bentinck 3, Paget 2, Manningham/Leith 3, Reserva 3) | ✔ Manda el mapa: 14 |
@@ -368,13 +368,13 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario el 2026-10-23; el
 | D-39 | *El tiempo es esencial* | Ver §11.2 |
 | D-43 | Solitario | Faltan la cara solitaria de las tarjetas y la tabla de dados (§13). Fuera de M1 |
 | D-45 | Movimiento de Moore | Una vez por turno, de una posición a otra (1 o 2 pasos), en la planificación británica |
-| D-46 | Moore cae por acción británica fuera del turno británico (arengando durante el turno francés): ¿cuándo se retira? | Al final del turno en curso |
-| D-47 | «Descartar 3 tácticas en cualquier momento» | Se ofrece en el paso del Mercado del propio turno (no en todos los momentos, para no llenar la partida de preguntas) |
-| D-48 | Carta de una unidad ya eliminada | Da sus cubos y entra en la racha, pero no la bonificación de +2 de «sin objetivos» (§5.4 habla de unidades activadas sin objetivos, no de unidades fuera del juego) |
-| D-49 | Moore abatido que aún no se ha retirado | Mantiene su apoyo (+1 dado / relanzamiento) pero no puede moverse ni arengar |
-| D-50 | Orden en una ventana de tácticas | Primero el jugador activo y luego el otro; cada uno puede jugar varias antes de pasar. Las de «cualquier momento» no se ofrecen en los tests de moral |
-| D-51 | *Reorganización*, *Improvisación*: «cualquier unidad» | Unidades propias. *Improvisación* deja al menos 1 punto a la que cede |
-| D-52 | *Recapacitando* | Cuenta como la compra del turno: después no se puede comprar del Mercado ni se descarta la carta de la derecha |
+| D-46 | Moore cae por acción británica fuera del turno británico (arengando durante el turno francés): ¿cuándo se retira? | ✔ Al final del **siguiente** turno británico (lectura literal); hasta entonces solo apoya (D-49), y si cayó arengando ni eso |
+| D-47 | «Descartar 3 tácticas en cualquier momento» | ✔ En cualquier momento: se ofrece en todas las ventanas de tácticas a quien tenga 3 o más |
+| D-48 | Carta de una unidad ya eliminada | ✔ Da sus cubos y entra en la racha, pero no la bonificación de +2 de «sin objetivos» (§5.4 habla de unidades activadas sin objetivos, no de unidades fuera del juego) |
+| D-49 | Moore abatido que aún no se ha retirado | ✔ Mantiene su apoyo (+1 dado / relanzamiento) pero no puede moverse ni arengar |
+| D-50 | Orden en una ventana de tácticas | ✔ Por turnos, carta a carta, empezando por el jugador activo, hasta que los dos pasan seguidos (así se puede responder a lo que juega el otro). Las cartas de «en cualquier momento» se ofrecen en todas las ventanas, también antes de un test de moral y tras sufrir bajas; el test usa la moral que tenga la unidad al tirar |
+| D-51 | *Reorganización*, *Improvisación*: «cualquier unidad» | ✔ Unidades propias. *Improvisación* deja al menos 1 punto a la que cede |
+| D-52 | *Recapacitando* | ✔ Cuenta como la compra del turno: después no se puede comprar del Mercado ni se descarta la carta de la derecha |
 
 ## 15. Ideas de la v2.1 (no forman parte de las reglas)
 

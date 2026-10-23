@@ -51,7 +51,11 @@ export function* hitMorale(g, unitId, n, why = '') {
 export function* moraleTest(g, unitId, value = g.units[unitId].morale) {
     const side = sideOf(unitId);
     const test = { unit: unitId, bonus: 0 };
+    const st = g.units[unitId];
+    const before = st.morale;
     yield* tacticWindow(g, 'morale_test', { owner: side, test });
+    if (st.status !== 'in') return false;
+    value += st.morale - before; // morale raised (or lost) just before the roll counts
     const roll = rollDie(g);
     const limit = value + test.bonus;
     const ok = roll <= limit;

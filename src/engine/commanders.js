@@ -33,7 +33,7 @@ export function* mooreRisk(g, steps, cause, { rally = false } = {}) {
     } else {
         m.status = 'dying';
         m.supportLost = rally; // a failed rally ends his support at once
-        log(g, 'Su ficha se retirará al final del turno; mientras tanto su apoyo sigue vigente' + (rally ? ', salvo el de esta arenga.' : '.'), 'british');
+        log(g, `Su ficha se retirará al final del turno británico${rally ? '; su apoyo termina con esta arenga fallida.' : '; mientras tanto su apoyo sigue vigente.'}`, 'british');
     }
     return false;
 }
