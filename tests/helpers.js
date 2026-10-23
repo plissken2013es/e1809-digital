@@ -23,7 +23,7 @@ export function checkInvariants(g) {
         assert.equal(total, Number(g.rules.inertiaSupply), 'Inertia cubes are not conserved');
     }
     for (const [id, st] of Object.entries(g.units)) {
-        assert.ok(st.blocks >= 0, `${id} blocks`);
+        assert.ok(st.blocks >= 0 && st.blocks <= UNITS[id].blocks, `${id} has ${st.blocks} blocks, ${UNITS[id].blocks} slots [D-19]`);
         assert.ok(['in', 'destroyed', 'routed'].includes(st.status), `${id} status`);
         if (UNITS[id].type === 'reserve') {
             assert.equal(st.morale, null);

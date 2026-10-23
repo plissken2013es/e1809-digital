@@ -223,6 +223,7 @@ Un único uso, a elegir entre:
 ## 10. Refuerzos
 
 - «Reforzar X (1–2 piezas)»: se mueven 1 o 2 bloques de la unidad activada a la unidad objetivo, que debe estar en juego. La Reserva puede repartirlos entre varias.
+- **Solo se rellenan huecos:** una unidad nunca tiene más bloques que sus casillas impresas (sus bloques iniciales). Si la unidad objetivo está completa, no se puede reforzar; si tiene un hueco, solo entra un bloque [D-19].
 - Una unidad que se queda sin bloques por reforzar queda destruida y cuenta como eliminada, salvo la Reserva [D-19].
 
 ## 11. Mercado y cartas de Táctica
@@ -323,7 +324,7 @@ Reglas de la v1.6c (§7), resumidas:
 
 ## 14. Decisiones para la versión digital
 
-Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, de D-46 a D-52, 2026-10-24); el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
+Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-19 y de D-46 a D-52, 2026-10-24); el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
 
 | Id | Hueco o conflicto | Decisión |
 |---|---|---|
@@ -345,7 +346,7 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, de
 | D-16 | Salvar de la desbandada | Tras fallar el test; la unidad conserva la moral que tenga (más de 0) |
 | D-17 | La Reserva no tiene moral: ¿cómo paga la activación? | ✔ No paga. Opción `reserveActivation: block` (retira 1 bloque, lectura literal) |
 | D-18 | ¿Las fichas pagadas como coste van al contador de bajas del rival? | Sí: «retirado por cualquier motivo». Las movidas al reforzar, no |
-| D-19 | Refuerzos | Sin límite de bloques por unidad. Si una unidad se queda sin bloques al reforzar, queda destruida y cuenta (salvo la Reserva) |
+| D-19 | Refuerzos: ¿límite de bloques por unidad? | ✔ (2026-10-24, corrección del usuario sobre la primera propuesta) Una unidad no supera sus casillas impresas (sus bloques iniciales): solo se refuerzan huecos vacíos. Si una unidad se queda sin bloques al reforzar, queda destruida y cuenta (salvo la Reserva) |
 | D-20 | Relanzamientos | Solo el atacante, sin límite, cualquier subconjunto de dados; se aplica la última tirada |
 | D-21 | Modificadores que dejan 0 dados o menos | Mínimo 1 dado. Opción `minDice: 0` (sin dados, no hay resultados) |
 | D-22 | Más de dos iguales | 3 iguales = 1 pareja, 4 = 2, 5 = 2, 6 = 3. Cada 3 da 1 cubo |

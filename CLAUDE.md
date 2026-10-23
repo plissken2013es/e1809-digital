@@ -11,7 +11,7 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 
 ## Documentos (leer antes de tocar reglas o código)
 
-- `docs/01-reglas-y-mecanicas.md`: **fuente de verdad de las reglas** (basada en el reglamento v1.6c) y tabla de decisiones `[D-n]`: las marcadas ✔ están confirmadas (19, revisadas el 2026-10-23 y el 2026-10-24); el resto siguen siendo propuestas. Si el código la contradice, manda el documento. Cada decisión nueva va a esa tabla; si conviene probar las dos lecturas, conviértela en opción de reglas (§12).
+- `docs/01-reglas-y-mecanicas.md`: **fuente de verdad de las reglas** (basada en el reglamento v1.6c) y tabla de decisiones `[D-n]`: las marcadas ✔ están confirmadas (20, revisadas el 2026-10-23 y el 2026-10-24); el resto siguen siendo propuestas. Si el código la contradice, manda el documento. Cada decisión nueva va a esa tabla; si conviene probar las dos lecturas, conviértela en opción de reglas (§12).
 - `docs/02-plan-tecnico.md`: arquitectura, herramientas y hoja de ruta.
 
 ## Material de origen

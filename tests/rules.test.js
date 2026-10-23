@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Session, results, deckOf } from '../src/engine/index.js';
+import { Session, results, deckOf, availableOrders } from '../src/engine/index.js';
 import { answer, until, passive } from './helpers.js';
 
 const BRITISH_HAND = ['hill-1', 'hill-2', 'hill-3'];
@@ -167,29 +167,47 @@ test('the Artillery fires on Moore at #1: he dies at once and the British lose 3
     assert.equal(s.state.units.hill.morale, 7);
 });
 
-test('the Reserve activates for free and spreads its blocks [D-17, §10]', () => {
-    const s = game({ hands: { french: [], british: ['reserva-1', 'hill-1', 'hill-2'] } });
+test('the Reserve activates for free and fills empty slots of several units [D-17, D-19, §10]', () => {
+    const s = game({ hands: { french: [], british: ['reserva-1', 'hill-1', 'hill-2'] }, units: { hill: { blocks: 2 }, bentinck: { blocks: 2 } } });
     until(s, 'Planificación', passive);
     assert.equal(s.pending.side, 'british');
     answer(s, 'Reserva');
     answer(s, 'stay');
     answer(s, '2 fichas');
-    answer(s, 'Hill');
-    answer(s, 'Hill');
-    assert.equal(s.state.units.reserva.blocks, 1);
-    assert.equal(s.state.units.hill.blocks, 5);
+    assert.deepEqual(s.pending.options.map((o) => o.id), ['hill', 'bentinck'], 'only units with an empty slot');
+    answer(s, 'Hill'); // Hill is full again: the second block goes to Bentinck without asking
+    assert.deepEqual([s.state.units.reserva.blocks, s.state.units.hill.blocks, s.state.units.bentinck.blocks], [1, 3, 3]);
     assert.equal(s.state.players.french.casualties, 0);
 });
 
-test('reserveActivation: block pays with a block that goes to the casualty track [D-17]', () => {
-    const s = game({ hands: { french: [], british: ['reserva-1', 'hill-1', 'hill-2'] } }, { reserveActivation: 'block' });
+test('a unit never goes over its printed slots: no reinforcement for a full unit [D-19]', () => {
+    // Manningham/Leith full (3/3): Bentinck cannot reinforce it; with a gap it can, one block
+    const full = game({ hands: { french: [], british: ['bentinck-1', 'hill-1', 'hill-2'] } });
+    assert.deepEqual(availableOrders(full.state, 'bentinck').map((o) => o.order.text), ['Si Elviña británica, atacar Mermet']);
+    const gaps = game({ hands: { french: [], british: ['bentinck-1', 'hill-1', 'hill-2'] }, units: { manningham_leith: { blocks: 2 } } });
+    until(gaps, 'Órdenes de Bentinck', passive);
+    answer(gaps, 'Reforzar');
+    assert.deepEqual([gaps.state.units.bentinck.blocks, gaps.state.units.manningham_leith.blocks], [2, 3], 'one gap: one block, without asking');
+});
+
+test('the Reserve with every unit full has nothing to do: cubes + 2 [D-19, §5.4]', () => {
+    const s = game({ hands: { french: [], british: ['reserva-1', 'hill-1', 'hill-2'] } });
     until(s, 'Planificación', passive);
     answer(s, 'Reserva');
     answer(s, 'stay');
-    answer(s, '2 fichas');
-    answer(s, 'Hill');
-    answer(s, 'Hill');
+    until(s, 'Mercado', passive);
+    assert.equal(s.state.units.reserva.blocks, 3);
+    assert.equal(s.state.players.british.cubes, 2 + 1 + 2);
+});
+
+test('reserveActivation: block pays with a block that goes to the casualty track [D-17]', () => {
+    const s = game({ hands: { french: [], british: ['reserva-1', 'hill-1', 'hill-2'] }, units: { hill: { blocks: 1 } } }, { reserveActivation: 'block' });
+    until(s, 'Planificación', passive);
+    answer(s, 'Reserva');
+    answer(s, 'stay');
+    answer(s, '2 fichas'); // only Hill has room: both blocks go there without asking
     assert.equal(s.state.units.reserva.blocks, 0);
+    assert.equal(s.state.units.hill.blocks, 3);
     assert.equal(s.state.units.reserva.status, 'in', 'the Reserve is never eliminated');
     assert.equal(s.state.players.french.casualties, 1);
 });

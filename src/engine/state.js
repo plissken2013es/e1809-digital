@@ -51,20 +51,26 @@ export function availableOrders(g, unitId) {
         }
         if (order.split) {
             // one order; each block picks its unit (turn.js reinforce)
-            if (st.blocks > 0 && order.targets.some((t) => inPlay(g, t))) out.push({ i, order, target: null });
+            if (st.blocks > 0 && order.targets.some((t) => freeSlots(g, t) > 0)) out.push({ i, order, target: null });
             return;
         }
         for (const t of order.targets) {
             if (order.act === 'attack') {
                 if (LOCATIONS[t] ? g.locations[t] === u.side : !inPlay(g, t)) continue;
             } else if (order.act === 'reinforce') {
-                if (!inPlay(g, t) || st.blocks < 1) continue;
+                if (freeSlots(g, t) < 1 || st.blocks < 1) continue;
             }
             out.push({ i, order, target: t });
         }
     });
     return out;
 }
+
+/**
+ * Empty slots of a unit in play: a unit never holds more blocks than its printed slots (its starting
+ * blocks), so a reinforcement only fills the gaps [§10, D-19].
+ */
+export const freeSlots = (g, unitId) => (inPlay(g, unitId) ? UNITS[unitId].blocks - g.units[unitId].blocks : 0);
 
 /** Dice of an attack before the combat extras: card + order + modifiers of the card that hold [docs/01 §4.1]. */
 export function baseDice(g, unitId, order) {

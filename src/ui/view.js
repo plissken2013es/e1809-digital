@@ -486,11 +486,6 @@ export class GameView {
                 const cls = out ? '.gone' : i < st.blocks ? `.${side}` : '.lost';
                 items.push(h(`div.slot${cls}${u.type === 'artillery' ? '.disc' : ''}`, { style: at(center(b)), title: u.name }));
             });
-            // reinforcements beyond the printed slots: extra pieces next to the last one
-            for (let i = slots.length; i < st.blocks && !out; i++) {
-                const [x, y] = center(slots[slots.length - 1]);
-                items.push(h(`div.slot.${side}.extra`, { style: at([x + (i - slots.length + 1) * 110, y + (i - slots.length + 1) * 70]), title: `${u.name}: refuerzo` }));
-            }
             const top = slots.reduce((m, b) => Math.min(m, b[1]), Infinity);
             const xs = slots.flatMap((b) => [b[0], b[2]]);
             const tagText = out ? `${u.name}: ${st.status === 'routed' ? 'desbandada' : 'destruida'}` : `${u.name} · ${st.blocks}▮${st.morale !== null ? ` · ${st.morale}♥` : ''}`;

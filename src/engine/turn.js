@@ -5,7 +5,7 @@ import { choose, log, beat } from './ask.js';
 import { shuffle } from './rng.js';
 import { ACTIONS, UNITS, LOCATIONS } from './data.js';
 import {
-    inPlay, availableOrders, gainCubes, payCubes, removeBlocks, eliminate, raiseMorale, unitName, SIDE_NAME,
+    inPlay, availableOrders, freeSlots, gainCubes, payCubes, removeBlocks, eliminate, raiseMorale, unitName, SIDE_NAME,
 } from './state.js';
 import { loseMorale, testAfterLoss } from './morale.js';
 import { mooreMove, mooreDies } from './commanders.js';
@@ -153,16 +153,17 @@ function* payActivation(g, side, unitId, free) {
     yield* testAfterLoss(g, unitId, before);
 }
 
-/** Moves 1–2 blocks to the target(s); a unit left empty is destroyed [§10, D-19]. */
+/** Moves 1–2 blocks into the empty slots of the target(s); a unit left empty is destroyed [§10, D-19]. */
 function* reinforce(g, side, unitId, o) {
     const st = g.units[unitId];
-    const max = Math.min(2, st.blocks);
+    const room = o.order.split ? o.order.targets.reduce((n, t) => n + freeSlots(g, t), 0) : freeSlots(g, o.target);
+    const max = Math.min(2, st.blocks, room);
     const n = max > 1 ? Number(yield* choose(g, side, `¿Cuántas fichas mueve ${unitName(unitId)}?`, [{ id: '1', label: '1 ficha' }, { id: '2', label: '2 fichas' }], { kind: 'amount' })) : 1;
     for (let i = 0; i < n; i++) {
         let to = o.target;
         if (o.order.split) {
-            const list = o.order.targets.filter((t) => inPlay(g, t));
-            to = yield* choose(g, side, `¿A qué unidad va la ficha ${i + 1}?`, list.map((t) => ({ id: t, label: `${unitName(t)} (${g.units[t].blocks} fichas)`, ref: t })), { kind: 'reinforce_to' });
+            const list = o.order.targets.filter((t) => freeSlots(g, t) > 0);
+            to = yield* choose(g, side, `¿A qué unidad va la ficha ${i + 1}?`, list.map((t) => ({ id: t, label: `${unitName(t)} (${g.units[t].blocks}/${UNITS[t].blocks} fichas)`, ref: t })), { kind: 'reinforce_to' });
         }
         st.blocks--;
         g.units[to].blocks++;
