@@ -54,12 +54,14 @@ export function* playTurn(g, side) {
     if (g.moore.status === 'dying' && side === 'british') yield* mooreDies(g, 'herido en combate');
 }
 
-/** Adds a played card to the streak; 3 in a row with the same cubes give +2 [§9, D-23]. */
+/**
+ * Adds a played card to the streak (the cubes of every card played, in order: the whole pile, for the
+ * screen); when the last 3 have the same cubes, +2 [§9, D-23].
+ */
 function streak(g, side, cubes, bonus) {
     const s = g.players[side].streak;
     s.push(cubes);
-    if (s.length > 3) s.shift();
-    if (bonus && s.length === 3 && s.every((x) => x === cubes)) gainCubes(g, side, 2, 'racha de Inercia');
+    if (bonus && s.length >= 3 && s.slice(-3).every((x) => x === cubes)) gainCubes(g, side, 2, 'racha de Inercia');
 }
 
 /**

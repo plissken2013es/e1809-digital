@@ -210,6 +210,19 @@ textarea { width: 100%; font: 12px/1.4 var(--mono); resize: vertical; }
 .handoff-card h1 { font: 800 28px/1.15 var(--serif); margin: 0 0 10px; }
 .handoff-card button { margin: 14px 0 6px; font-size: 16px; padding: 10px 18px; }
 
+/* the cards played as groups of Inertia cubes; the run at the end (streak, docs/01 §9) in gold */
+.streak { display: inline-flex; flex-wrap: wrap; gap: 3px; align-items: center; vertical-align: middle; }
+.cubechip { display: inline-flex; gap: 1px; padding: 2px 3px; border-radius: 3px; background: #0006; border: 1px solid var(--line); }
+.cubechip i { width: 6px; height: 6px; border-radius: 1px; background: #0b0b0d; border: 1px solid #8a8a90; }
+.cubechip.run { border-color: var(--gold); background: #3a2e12; }
+.cubechip.run i { border-color: var(--gold); }
+.streak.big .cubechip { padding: 3px 4px; }
+.streak.big .cubechip i { width: 9px; height: 9px; }
+.streak .more { font: 11px var(--mono); color: var(--muted); }
+.streak-row { margin-bottom: 10px; }
+.streak-row .hint { margin-top: 4px; }
+.opts .bonus { color: var(--gold); font: 700 12px var(--mono); }
+
 /* ------------------------------------------------------------ hands, market, log */
 
 .hand-hidden { display: flex; gap: 4px; }

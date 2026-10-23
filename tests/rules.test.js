@@ -232,6 +232,15 @@ test('three cards in a row with the same cubes give +2 [§9]', () => {
     assert.equal(s.state.players.french.cubes, 2 + 2 + 2);
 });
 
+test('a longer run keeps giving +2 with each card; the whole pile is kept [§9]', () => {
+    const s = game({ hands: { french: ['merle-2', 'mermet-1', 'delaborde-1'], british: BRITISH_HAND }, streak: { french: [1, 2, 2, 2] } });
+    until(s, 'Planificación', passive);
+    answer(s, 'Merle');
+    until(s, 'Coste de activación', passive);
+    assert.equal(s.state.players.french.cubes, 2 + 2 + 2);
+    assert.deepEqual(s.state.players.french.streak, [1, 2, 2, 2, 2]);
+});
+
 test('a unit without targets: cubes + 2, no activation cost [§5.4]', () => {
     // La Houssaye: Bentinck gone and Paget at #1 → nothing to attack
     const s = game({ hands: { french: ['la_houssaye-1', 'merle-1', 'mermet-1'], british: BRITISH_HAND }, units: { bentinck: { status: 'routed', blocks: 0 } } });

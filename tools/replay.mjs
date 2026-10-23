@@ -58,7 +58,7 @@ if (flag('state')) {
     for (const [id, u] of Object.entries(g.units)) console.log(`  ${UNITS[id].name.padEnd(18)} ${u.status.padEnd(9)} fichas ${u.blocks} · moral ${u.morale ?? '-'}${u.pos ? ` · #${u.pos}` : ''}`);
     for (const side of ['french', 'british']) {
         const p = g.players[side];
-        console.log(`${SIDE_NAME[side]}: ${p.cubes} cubos · bajas enemigas ${p.casualties} · racha ${p.streak.join(',')}`);
+        console.log(`${SIDE_NAME[side]}: ${p.cubes} cubos · bajas enemigas ${p.casualties} · racha ${p.streak.slice(-6).join(',')}`);
         console.log(`  mano: ${p.hand.map(cardLabel).join('; ') || '-'}`);
         console.log(`  mazo: ${p.deck.length} · descarte: ${p.discard.length}`);
         console.log(`  tácticas: ${p.tactics.map((t) => TACTICS[t].name).join(', ') || '-'}`);

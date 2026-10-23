@@ -58,6 +58,41 @@ function beatDice(b) {
     }
 }
 
+/** The run of equal cubes at the end of a streak (docs/01 §9): { n: cards, cubes }. */
+function runOf(streak) {
+    const cubes = streak.at(-1);
+    let n = 0;
+    for (let i = streak.length - 1; i >= 0 && streak[i] === cubes; i--) n++;
+    return { n, cubes };
+}
+
+/** Would playing this card now give the +2 of the streak? (2 cards in a row with its cubes) */
+const givesBonus = (p, cardId) => {
+    const r = runOf(p.streak);
+    return r.n >= 2 && ACTIONS[cardId].cubes === r.cubes;
+};
+
+/** What the streak means for the next card. */
+function streakHint(p) {
+    const r = runOf(p.streak);
+    const cubes = (n) => `${n} cubo${n > 1 ? 's' : ''}`;
+    if (!r.n) return 'Aún no ha jugado cartas de Acción: tres seguidas con los mismos cubos dan +2.';
+    if (r.n >= 2) return `Racha de ${r.n} cartas de ${cubes(r.cubes)}: otra de ${cubes(r.cubes)} da +2.`;
+    return `Última carta de ${cubes(r.cubes)}: dos más seguidas de ${cubes(r.cubes)} dan +2.`;
+}
+
+/** The cards played as groups of cubes, oldest first; the run at the end in gold. max: only the last ones. */
+function streakView(p, max = 0, big = false) {
+    const s = p.streak;
+    const r = runOf(s);
+    const from = max ? Math.max(0, s.length - max) : 0;
+    const chips = s.slice(from).map((c, k) => {
+        const inRun = r.n >= 2 && from + k >= s.length - r.n;
+        return h(`span.cubechip${inRun ? '.run' : ''}`, { title: `Carta de ${c} cubo${c > 1 ? 's' : ''}` }, Array.from({ length: c }, () => h('i')));
+    });
+    return h(`span.streak${big ? '.big' : ''}`, { title: streakHint(p) }, from > 0 && h('span.more', null, `+${from}`), chips.length ? chips : h('span.muted', null, '—'));
+}
+
 /** Image of whatever an option or a token refers to. */
 function refImage(ref) {
     if (!ref) return null;
@@ -394,7 +429,7 @@ export class GameView {
             h('span.brand', null, 'Elviña 1809'),
             h('span.pill', null, `Ronda ${g.roundNo} · turno ${g.turnNo}`),
             g.turnNo > 0 && h(`span.pill.${CODE[g.active]}`, null, `Turno ${SIDE_TITLE[g.active].toLowerCase()}`),
-            ...SIDES.map((s) => h(`span.pill.${CODE[s]}`, { title: `Cubos de Inercia del ${SIDE_NAME[s]}` }, `${SIDE_TITLE[s]}: ${g.players[s].cubes} cubos`)),
+            ...SIDES.map((s) => h(`span.pill.${CODE[s]}`, { title: `Cubos de Inercia del ${SIDE_NAME[s]} · ${streakHint(g.players[s])}` }, `${SIDE_TITLE[s]}: ${g.players[s].cubes} cubos `, streakView(g.players[s], 4))),
             h('span.pill.gold', { title: 'Reserva común de cubos de Inercia' }, `Reserva ${g.supply ?? '∞'}`),
             h('span.pill', { title: 'Divisiones eliminadas (2 = derrota)' }, `Bajas de División: FR ${eliminatedOf(g, 'french').length} · GB ${eliminatedOf(g, 'british').length}`),
             h('span.spacer'),
@@ -591,7 +626,9 @@ export class GameView {
                 out.push(h('p.bot-wait', null, this.paused || this.ui.speed === 'step' ? 'Bot en pausa: pulsa «Paso del bot» o «Seguir bots».' : 'El bot está pensando…'));
             } else if (p.type === 'choose') {
                 out.push(h('div.opts', null, p.options.map((o) => {
-                    const b = h(`button${o.id === 'pass' || o.id === 'none' ? '.ghost' : ''}`, { onclick: () => this.act(o.id), title: o.hint ?? null }, o.label);
+                    // planning (not Soult's cards, which give no cubes): which card would complete the streak
+                    const bonus = p.kind === 'play' && !p.prompt.startsWith('Soult') && ACTIONS[o.id] && givesBonus(g.players[p.side], o.id);
+                    const b = h(`button${o.id === 'pass' || o.id === 'none' ? '.ghost' : ''}`, { onclick: () => this.act(o.id), title: o.hint ?? null }, o.label, bonus && h('b.bonus', null, ' +2 racha'));
                     return this.hover(b, o.ref);
                 })));
             } else {
@@ -695,7 +732,7 @@ export class GameView {
         const handCards = p.hand.map((id) => {
             if (!visible) return h('img', { src: ACTIONS[id].side === 'french' ? 'assets/cards/backs/action_french.webp' : 'assets/cards/backs/action_british.webp', alt: 'carta oculta' });
             const opts = this.optionsFor(id);
-            const el = h(`div.card${opts.length === 1 ? '.option' : ''}`, { title: cardLabel(id) }, h('img', { src: ACTIONS[id].image, alt: cardLabel(id) }));
+            const el = h(`div.card${opts.length === 1 ? '.option' : ''}`, { title: cardLabel(id) }, h('img', { src: ACTIONS[id].image, alt: cardLabel(id) }), givesBonus(p, id) && h('span.badge', { title: streakHint(p) }, '+2'));
             if (opts.length === 1) el.addEventListener('click', () => this.act(opts[0].id));
             return this.hover(el, id);
         });
@@ -711,7 +748,9 @@ export class GameView {
             [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio']].map(([v, l]) => h('option', { value: v, selected: this.players[side] === v }, l)));
         return h(
             'section.panel', null,
-            h('h2', null, h(`span.${CODE[side]}`, null, SIDE_TITLE[side]), h('small', null, `${p.cubes} cubos · racha ${p.streak.join('-') || '—'} · mazo ${p.deck.length} · descarte ${p.discard.length}`), who),
+            h('h2', null, h(`span.${CODE[side]}`, null, SIDE_TITLE[side]), h('small', null, `${p.cubes} cubos · mazo ${p.deck.length} · descarte ${p.discard.length}`), who),
+            h('p.kicker', null, `Cartas jugadas (${p.streak.length})`),
+            h('div.streak-row', null, streakView(p, 0, true), h('p.hint', null, streakHint(p))),
             h('p.kicker', null, `Mano (${p.hand.length})`),
             h(visible ? 'div.cards' : 'div.hand-hidden', null, handCards.length ? handCards : h('span.empty', null, 'Sin cartas')),
             limbo,
