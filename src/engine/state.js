@@ -80,6 +80,17 @@ export function baseDice(g, unitId, order) {
     return n;
 }
 
+/** The dice modifiers of the unit's card that hold now (e.g. «+1 dado si Elviña»). */
+export const activeModifiers = (g, unitId) => UNITS[unitId].modifiers.filter((m) => Number.isInteger(m.dice) && allHold(g, m.if));
+
+/** Dice the unit would roll now, before the order's own modifier and the combat extras (Moore, tactics). */
+export const currentDice = (g, unitId) => baseDice(g, unitId, {});
+
+/** Each attack the unit could make now, with its dice (order modifier and minimum included). */
+export const attackDice = (g, unitId) => availableOrders(g, unitId)
+    .filter((o) => o.order.act === 'attack')
+    .map((o) => ({ ...o, dice: Math.max(g.rules.minDice, baseDice(g, unitId, o.order)) }));
+
 export const hasKeyword = (unitId, kw) => UNITS[unitId].modifiers.some((m) => m.keyword === kw);
 
 // ------------------------------------------------------------------ Moore

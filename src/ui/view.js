@@ -6,7 +6,7 @@
 import { h } from './dom.js';
 import {
     UNITS, COMMANDERS, ACTIONS, ACTION_BACKS, TACTICS, BOARD, LOCATIONS, unitsOf, SIDE_NAME, currentResults, describe,
-    cardLabel, makeRecord, encodeRecord, IllegalAction, eliminatedOf,
+    cardLabel, orderLabel, makeRecord, encodeRecord, IllegalAction, eliminatedOf, currentDice, attackDice, activeModifiers,
 } from '../engine/index.js';
 import { createGreedyBot } from '../ai/greedyBot.js';
 import { createRandomBot } from '../ai/randomBot.js';
@@ -92,6 +92,25 @@ function streakView(p, max = 0, big = false) {
     });
     return h(`span.streak${big ? '.big' : ''}`, { title: streakHint(p) }, from > 0 && h('span.more', null, `+${from}`), chips.length ? chips : h('span.muted', null, '—'));
 }
+
+/**
+ * The dice a unit rolls now, explained: its card, the modifiers that hold, and each attack it could
+ * make (an order can add or take dice). Moore's support and tactics come on top, in the combat.
+ */
+function diceInfo(g, id) {
+    const u = UNITS[id];
+    const n = currentDice(g, id);
+    const mods = activeModifiers(g, id);
+    const lines = [`Dados ahora: ${n}${mods.length ? ` (${u.dice} de la tarjeta; ${mods.map((m) => m.text).join('; ')})` : ''}`];
+    const attacks = attackDice(g, id);
+    if (attacks.length) lines.push(...attacks.map((a) => `${orderLabel(a)}: ${a.dice} dados`));
+    else lines.push('Ahora no tiene ningún ataque posible');
+    if (u.side === 'british' && u.type !== 'reserve') lines.push('Moore en su posición: +1 dado o un relanzamiento gratis');
+    return { n, changed: n !== u.dice, text: lines.join('\n') };
+}
+
+/** A small white die with the number of dice. */
+const diceChip = (n, changed) => h(`span.d6${changed ? '.changed' : ''}`, null, n);
 
 /** Image of whatever an option or a token refers to. */
 function refImage(ref) {
@@ -523,8 +542,13 @@ export class GameView {
             });
             const top = slots.reduce((m, b) => Math.min(m, b[1]), Infinity);
             const xs = slots.flatMap((b) => [b[0], b[2]]);
-            const tagText = out ? `${u.name}: ${st.status === 'routed' ? 'desbandada' : 'destruida'}` : `${u.name} · ${st.blocks}▮${st.morale !== null ? ` · ${st.morale}♥` : ''}`;
-            const tag = h(`div.unit-tag.${side}${out ? '.out' : ''}${focus.has(id) ? '.focus' : ''}`, { style: at([(Math.min(...xs) + Math.max(...xs)) / 2, top - 20]) }, tagText);
+            // name, dice it rolls now (pieces are the tokens themselves) and morale
+            const fights = !out && u.type !== 'reserve';
+            const info = fights ? diceInfo(g, id) : null;
+            const tagBody = out
+                ? `${u.name}: ${st.status === 'routed' ? 'desbandada' : 'destruida'}`
+                : [`${u.name} `, info && diceChip(info.n, info.changed), st.morale !== null && ` ${st.morale}♥`];
+            const tag = h(`div.unit-tag.${side}${out ? '.out' : ''}${focus.has(id) ? '.focus' : ''}`, { style: at([(Math.min(...xs) + Math.max(...xs)) / 2, top - 20]), title: info?.text ?? null }, tagBody);
             items.push(this.clickable(tag, id));
         }
         for (const [loc, l] of Object.entries(LOCATIONS)) {
@@ -569,7 +593,9 @@ export class GameView {
         const u = UNITS[id];
         const st = g.units[id];
         const c = g.combat;
-        const name = h('span.name', { onclick: () => this.zoomRef(id) }, u.name, h('small', null, `${u.dice} dados · ${u.activations} act.`));
+        const info = st.status === 'in' && u.type !== 'reserve' ? diceInfo(g, id) : null;
+        const name = h('span.name', { onclick: () => this.zoomRef(id), title: info?.text ?? null }, u.name,
+            h('small', null, info ? [diceChip(info.n, info.changed), info.changed ? ` dados (tarjeta ${u.dice})` : ' dados'] : u.type === 'reserve' ? 'no combate' : '—'));
         this.hover(name, id);
         const morale = st.morale === null
             ? h('span.muted', null, 'sin moral · no combate')

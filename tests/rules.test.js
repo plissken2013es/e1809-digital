@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Session, results, deckOf, availableOrders } from '../src/engine/index.js';
+import { Session, results, deckOf, availableOrders, currentDice, attackDice } from '../src/engine/index.js';
 import { answer, until, passive } from './helpers.js';
 
 const BRITISH_HAND = ['hill-1', 'hill-2', 'hill-3'];
@@ -19,6 +19,17 @@ test('pairs, threes and the Artillery dice [§6, D-9, D-22]', () => {
     const art = r([1, 1, 2, 2, 6, 6], true);
     assert.equal(art.defenderCasualties, 2, 'Artillery: 1-pairs count as 6-pairs');
     assert.equal(art.attackerMorale + art.attackerCasualties, 0, 'Artillery: 2s ignored');
+});
+
+test('dice a unit rolls now: card + the modifiers that hold; each attack with its order [§4.1]', () => {
+    const start = game({}).state;
+    assert.equal(currentDice(start, 'hill'), 6, '5 + 1 (Palavea británica)');
+    assert.equal(currentDice(start, 'bentinck'), 4, '5 − 1 (Artillería en juego)');
+    assert.deepEqual(attackDice(start, 'hill').map((a) => [a.target, a.dice]), [['artilleria', 3], ['delaborde', 6]], 'Palavea is British: the Artillery (−3) or Delaborde');
+    const later = game({ locations: { palavea: 'french', elvina: 'french' }, units: { artilleria: { status: 'routed', blocks: 0 } } }).state;
+    assert.equal(currentDice(later, 'mermet'), 5, '5 + 1 (Elviña) − 1 (Artillería muerta)');
+    assert.equal(currentDice(later, 'bentinck'), 5);
+    assert.deepEqual(attackDice(later, 'hill').map((a) => [a.target, a.dice]), [['palavea', 5]]);
 });
 
 test('Elviña: the first casualty switches control, the second removes a defender block [§4.2, D-13]', () => {
