@@ -506,6 +506,9 @@ export class GameView {
     }
 
     showPreview(e, img) {
+        // an open modal dialog sits in the browser's top layer, above any z-index: the preview goes inside it
+        const host = this.dialog.open ? this.dialog : document.body;
+        if (this.preview.parentNode !== host) host.append(this.preview);
         this.preview.replaceChildren(h('img', { src: img.src, alt: '' }), img.text && h('p', null, img.text));
         this.preview.classList.toggle('wide', Boolean(img.wide));
         this.preview.classList.add('show');
