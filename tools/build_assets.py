@@ -1,6 +1,6 @@
 """Build the game's image copies: extracted/images/**/*.png -> assets/**/*.webp.
 
-The PNG crops come from tools/extract_sources.py at full resolution; the game only needs
+The PNG crops come from tools/extract_sources.py at full resolution (and tools/make_digital_art.py); the game only needs
 smaller WebP copies. The JSON in src/data/ already points at these paths.
 
 Usage: python -I tools/build_assets.py [--quality 82]
@@ -15,7 +15,7 @@ SRC = ROOT / "extracted" / "images"
 DST = ROOT / "assets"
 
 # longest side, in pixels, per top-level folder of extracted/images/cards and the rest
-MAX_SIDE = {"actions": 480, "tactics": 560, "units": 1100, "backs": 560, "board": 3600, "cover.png": 1000}
+MAX_SIDE = {"actions": 480, "tactics": 560, "units": 1100, "backs": 560, "board": 3600, "cover.png": 1000, "icons": 256}
 
 
 def max_side(rel):
@@ -32,7 +32,8 @@ def main():
     for png in sorted(SRC.rglob("*.png")):
         rel = png.relative_to(SRC)
         out = (DST / rel).with_suffix(".webp")
-        img = Image.open(png).convert("RGB")
+        img = Image.open(png)
+        img = img.convert("RGBA" if img.mode in ("RGBA", "LA") else "RGB")  # icons keep their transparency
         img.thumbnail((max_side(rel), max_side(rel)), Image.LANCZOS)
         out.parent.mkdir(parents=True, exist_ok=True)
         img.save(out, "WEBP", quality=args.quality, method=6)

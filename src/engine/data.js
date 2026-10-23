@@ -10,6 +10,7 @@ export const SIDES = ['french', 'british'];
 export const UNITS = byId(unitsJson.units);
 export const COMMANDERS = byId(unitsJson.commanders);
 export const ACTIONS = byId(actionsJson.cards);
+export const ACTION_BACKS = actionsJson.backs;
 export const TACTICS = byId(tacticsJson.cards);
 export const BOARD = boardJson;
 export const LOCATIONS = boardJson.locations;

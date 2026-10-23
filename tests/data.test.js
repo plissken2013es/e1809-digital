@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { UNITS, COMMANDERS, ACTIONS, TACTICS, BOARD, LOCATIONS, unitsOf, deckOf, enemyOf } from '../src/engine/data.js';
+import { UNITS, COMMANDERS, ACTIONS, ACTION_BACKS, TACTICS, BOARD, LOCATIONS, unitsOf, deckOf, enemyOf } from '../src/engine/data.js';
 import tacticsJson from '../src/data/tactics.json' with { type: 'json' };
 import tacticsRaw from '../extracted/tactics_raw.json' with { type: 'json' };
 
@@ -135,6 +135,8 @@ test('every image path exists', () => {
         ...Object.values(ACTIONS).map((c) => c.image),
         ...Object.values(TACTICS).map((c) => c.image),
         tacticsJson.back,
+        ...Object.values(ACTION_BACKS),
+        'assets/icons/horse.webp',
     ];
     for (const p of paths) assert.ok(existsSync(ROOT + p), p);
 });

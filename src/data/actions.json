@@ -2,11 +2,12 @@
   "_notes": [
     "Hand-curated from the card images (assets/cards/actions, Tabletopia renders 2026-02). Not generated.",
     "cubes: Inertia cubes shown at the bottom of the card. horse: the red horse icon (one free move of Moore, docs/01 §8.1).",
-    "Every card activates its unit; ids are <unit>-<n> in sheet order."
+    "Every card activates its unit; ids are <unit>-<n> in sheet order.",
+    "backs: made for the digital version by tools/make_digital_art.py (the printed backs, action_*.webp, are white placeholders)."
   ],
   "backs": {
-    "british": "assets/cards/backs/action_british.webp",
-    "french": "assets/cards/backs/action_french.webp"
+    "british": "assets/cards/backs/action_british_digital.webp",
+    "french": "assets/cards/backs/action_french_digital.webp"
   },
   "cards": [
     { "id": "paget-1", "side": "british", "unit": "paget", "cubes": 2, "horse": false, "image": "assets/cards/actions/paget-1.webp" },

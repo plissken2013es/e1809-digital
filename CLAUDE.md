@@ -37,7 +37,7 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 
 ## Datos
 
-- `python -I tools/extract_sources.py` → `extracted/images/` (recortes a resolución completa, fuera de git) y `extracted/tactics_raw.json` (textos de las 36 tácticas leídos de la capa de texto de los PDF). `python -I tools/build_assets.py` → `assets/**/*.webp`.
+- `python -I tools/extract_sources.py` → `extracted/images/` (recortes a resolución completa, fuera de git) y `extracted/tactics_raw.json` (textos de las 36 tácticas leídos de la capa de texto de los PDF). `python -I tools/make_digital_art.py` → piezas propias de la versión digital (el caballo de las cartas en blanco para la ficha de Moore, `icons/horse.png`, y los dorsos de las cartas de Acción con Moore y Soult, `action_*_digital.png`: los impresos son marcadores en blanco). `python -I tools/build_assets.py` → `assets/**/*.webp` (los iconos conservan la transparencia).
 - `src/data/units.json`, `actions.json`, `board.json` y `tactics.json` están **curados a mano** (ver `src/data/README.md`). Los textos impresos se guardan tal cual en `text`; al lado va su lectura formal.
 - Los textos de `tactics.json` deben coincidir con `extracted/tactics_raw.json` (test); el coste de *Reorganización* es la única excepción ([D-36]).
 - Las posiciones de `board.json` están en píxeles del mapa a resolución completa (7016 × 4960).

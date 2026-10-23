@@ -5,7 +5,7 @@
 
 import { h } from './dom.js';
 import {
-    UNITS, COMMANDERS, ACTIONS, TACTICS, BOARD, LOCATIONS, unitsOf, SIDE_NAME, currentResults, describe,
+    UNITS, COMMANDERS, ACTIONS, ACTION_BACKS, TACTICS, BOARD, LOCATIONS, unitsOf, SIDE_NAME, currentResults, describe,
     cardLabel, makeRecord, encodeRecord, IllegalAction, eliminatedOf,
 } from '../engine/index.js';
 import { createGreedyBot } from '../ai/greedyBot.js';
@@ -546,7 +546,7 @@ export class GameView {
                 style: at(center(BOARD.moore[g.moore.pos])),
                 title: `Moore en #${g.moore.pos} · Senda del Sacrificio ${g.moore.track}${g.moore.status === 'dying' ? ' · abatido' : ''}`,
                 onclick: () => this.zoomRef('moore'),
-            }, g.moore.status === 'dying' ? '†' : g.moore.track), 'moore'));
+            }, h('img', { src: 'assets/icons/horse.webp', alt: '' }), h('b', null, g.moore.status === 'dying' ? '†' : g.moore.track)), 'moore'));
         }
         const note = p?.kind === 'moore_move' ? 'Elige en el mapa adónde cabalga Moore' : null;
         return h('div.map', { style: { backgroundImage: `url(${BOARD.image})` } }, items, note && h('div.map-note', null, note));
@@ -730,7 +730,7 @@ export class GameView {
         const visible = this.handVisible(side);
         const pend = g.pending;
         const handCards = p.hand.map((id) => {
-            if (!visible) return h('img', { src: ACTIONS[id].side === 'french' ? 'assets/cards/backs/action_french.webp' : 'assets/cards/backs/action_british.webp', alt: 'carta oculta' });
+            if (!visible) return h('img', { src: ACTION_BACKS[side], alt: 'carta oculta' });
             const opts = this.optionsFor(id);
             const el = h(`div.card${opts.length === 1 ? '.option' : ''}`, { title: cardLabel(id) }, h('img', { src: ACTIONS[id].image, alt: cardLabel(id) }), givesBonus(p, id) && h('span.badge', { title: streakHint(p) }, '+2'));
             if (opts.length === 1) el.addEventListener('click', () => this.act(opts[0].id));
