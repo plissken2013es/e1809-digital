@@ -112,7 +112,7 @@ Unidades (`units.json`):
 1. Jugar una carta de Acción de la mano. Un francés con Soult disponible puede usar su doble activación en su lugar (§8.2).
 2. Recibir los cubos de la carta (y la racha, §9).
 3. Solo el británico, y es opcional: mover a Moore (§8.1).
-4. Pagar el coste de activación de la unidad: −1 moral o retirar 1 bloque, a elección [D-17]. No se paga si la unidad no tiene ninguna orden posible (§5.4).
+4. Pagar el coste de activación de la unidad: −1 moral o retirar 1 bloque, a elección. La Reserva no paga [D-17]. No se paga si la unidad no tiene ninguna orden posible (§5.4).
 
 ### 5.2 Combate
 
@@ -154,12 +154,16 @@ Si la unidad activada no puede cumplir ninguna orden (o ya está eliminada):
 
    - Tres iguales cuentan como una pareja, cuatro como dos y seis como tres.
    - **Artillería atacante** [D-9]: las parejas de 1 cuentan como de 6 y los 2 no tienen efecto.
-4. Se aplican todos los resultados; después se hacen los tests de moral, primero del defensor y luego del atacante (§7).
+4. Se aplican todos los resultados; después se hace el test de moral de cada unidad que haya perdido moral, primero el del defensor y luego el del atacante (§7).
 5. Si en el mismo combate se cumplen a la vez las condiciones de victoria de los dos bandos, gana el atacante.
 
 ## 7. Moral y desbandada
 
-- Cada vez que una unidad pierde 1 punto de moral y queda en **5 o menos**, tira 1 dado. Si sale **más** que su moral, se desbanda: se retiran sus bloques y queda eliminada. Hay un test por punto perdido [D-15].
+- Cada vez que una unidad pierde moral y queda en **5 o menos**, tira 1 dado. Si sale **más** que su moral, se desbanda: se retiran sus bloques y queda eliminada. Hay **un test por golpe**, con la moral que queda tras él, aunque el golpe quite varios puntos [D-15]. Cuenta como un golpe:
+  - El pago de la activación.
+  - El pago de un relanzamiento.
+  - Todos los resultados de una tirada sobre esa unidad.
+  - El efecto de una carta o de la muerte de Moore sobre esa unidad.
 - Con moral 0 queda eliminada sin test ni salvación.
 - Subir la moral no provoca test. La moral no supera su máximo inicial [D-37].
 - **Salvar de la desbandada** tras un test fallido [D-16]:
@@ -185,9 +189,11 @@ Si la unidad activada no puede cumplir ninguna orden (o ya está eliminada):
   - Una carta con el **caballo** paga gratis el primer paso.
 - **Tirada de riesgo:** si tras avanzar la Senda el marcador queda por encima de 2, se tiran 2 dados. Si la suma es **menor** que la posición del marcador, Moore cae abatido [D-6].
 - **Arenga:** evita la desbandada de una unidad bajo su influencia [D-2][D-3]:
-  1. Avanza 2 pasos la Senda y hace la tirada de riesgo, si procede.
-  2. Si sobrevive, tira 1 dado: con 1–5 la unidad no se desbanda.
+  1. Avanza 1 paso la Senda y hace la tirada de riesgo, si procede.
+  2. Si sobrevive, la unidad no se desbanda.
   3. Si cae antes de arengar, la unidad se desbanda.
+  
+  La tarjeta pide más (avanzar 2 pasos y, si sobrevive, salvar solo con 1–5 en 1d6); queda como opción `mooreRally: card`.
 - **Muerte de Moore** [D-7]:
   - **Por acción británica** (movimiento o arenga): su ficha se retira al final del turno británico y su apoyo sigue funcionando hasta entonces, salvo en la arenga fallida.
   - **Por la Artillería**: se retira al momento.
@@ -280,9 +286,10 @@ Un único uso, a elegir entre:
 | Opción | Valores | Por defecto | Qué cambia |
 |---|---|---|---|
 | `bayonet` | `die` · `none` | `die` | qué hace la Bayoneta ([D-1]) |
-| `mooreRally` | `card` · `rulebook` | `card` | arenga de Moore: la de la tarjeta (avanza 2 + 1d6 de 1–5) o la sencilla (avanza 1 y basta sobrevivir) ([D-2]) |
+| `mooreRally` | `rulebook` · `card` | `rulebook` | arenga de Moore: la del reglamento (avanza 1 y basta sobrevivir) o la de la tarjeta (avanza 2 + 1d6 de 1–5) ([D-2]) |
 | `mooreUnderFire` | `always` · `influence` | `always` | si la Artillería amenaza a Moore en todo combate o solo si su objetivo está bajo su influencia ([D-8]) |
-| `reserveActivation` | `block` · `free` | `block` | coste de activación de la Reserva ([D-17]) |
+| `reserveActivation` | `free` · `block` | `free` | coste de activación de la Reserva ([D-17]) |
+| `moraleTests` | `hit` · `point` | `hit` | un test de moral por golpe o uno por punto perdido ([D-15]) |
 | `minDice` | `1` · `0` | `1` | dados mínimos de un combate ([D-21]) |
 | `inertiaSupply` | `25` · `unlimited` | `25` | reserva común limitada o no ([D-24]) |
 | `discardThreeTactics` | `3` · `2` | `3` | cubos por descartar 3 tácticas (v1.6c / v2.1) ([D-30]) |
@@ -316,27 +323,27 @@ Reglas de la v1.6c (§7), resumidas:
 
 ## 14. Decisiones para la versión digital
 
-**Propuestas, pendientes de revisar una a una con el diseñador.** Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
+Las marcadas **✔** se revisaron y confirmaron con el usuario el 2026-10-23; el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
 
 | Id | Hueco o conflicto | Decisión |
 |---|---|---|
-| D-1 | «Bayoneta» aparece en tres tarjetas, pero el reglamento solo dice que «permite modificar el resultado de los dados» | ±1 a un dado una vez por combate, como *¡Calen bayonetas!* (la carta que da la Bayoneta a los franceses, según las notas de diseño); el dado se puede relanzar después. Opción `bayonet` |
-| D-2 | Arenga: la tarjeta de Moore pide avanzar 2, tirada de riesgo y luego 1d6 (1–5 = éxito); el reglamento solo dice «avanzar el marcador» | Manda la tarjeta. Opción `mooreRally: rulebook`: avanza 1 y, si sobrevive, salva (como Moore en solitario) |
+| D-1 | «Bayoneta» aparece en tres tarjetas, pero el reglamento solo dice que «permite modificar el resultado de los dados» | ✔ ±1 a un dado una vez por combate, como *¡Calen bayonetas!* (la carta que da la Bayoneta a los franceses, según las notas de diseño); el dado se puede relanzar después. Opción `bayonet` |
+| D-2 | Arenga: la tarjeta de Moore pide avanzar 2, tirada de riesgo y luego 1d6 (1–5 = éxito); el reglamento solo dice «avanzar el marcador» | ✔ Manda el **reglamento**: avanza 1 paso y, si sobrevive a la tirada de riesgo, salva. Opción `mooreRally: card` para la versión de la tarjeta |
 | D-3 | ¿La arenga necesita que la unidad esté bajo la influencia de Moore? ¿Vale en el turno francés? | Sí a las dos. Moore no puede moverse para arengar fuera de la planificación británica |
-| D-4 | ¿Cuántas ventajas da el apoyo, y cuándo se elige? | Una por combate. El +1 dado se elige antes de la primera tirada; si no se ha elegido, queda el relanzamiento gratuito |
+| D-4 | ¿Cuántas ventajas da el apoyo, y cuándo se elige? | ✔ Una por combate. El +1 dado se elige antes de la primera tirada; si no se ha elegido, queda el relanzamiento gratuito |
 | D-5 | Paget en #2: ¿sigue bajo la influencia de #1? | Sí: #1 influye en Paget esté donde esté |
 | D-6 | ¿Hasta dónde llega la Senda? | Tope en 12. La tirada de riesgo se hace tras cada pago (movimiento o arenga) que la deje por encima de 2 |
 | D-7 | Muerte de Moore: reparto y tests | El británico reparte −3 entre sus unidades con moral (no la Reserva), con sus tests. Por acción británica, al final del turno británico; por la Artillería, al momento |
-| D-8 | Artillería: «Si Moore está en #1 o #2, avanzar +2 el marcador de Honor y forzar la tirada inglesa». ¿Cuándo? | Cada vez que la Artillería combate, antes de su primera tirada. Opción `mooreUnderFire: influence` (solo si el objetivo está bajo la influencia de Moore) |
+| D-8 | Artillería: «Si Moore está en #1 o #2, avanzar +2 el marcador de Honor y forzar la tirada inglesa». ¿Cuándo? | ✔ Cada vez que la Artillería combate, antes de su primera tirada. Opción `mooreUnderFire: influence` (solo si el objetivo está bajo la influencia de Moore) |
 | D-9 | Dados de la Artillería | Las parejas de 1 son bajas del defensor y los 2 se ignoran. Los 3 dan cubos igual. Como defensora, la Artillería sufre los resultados normales (bajas = discos) |
 | D-10 | «Derrotado», «destruido», «muerta», «Artillería activa» | Eliminada (destruida o desbandada) / sigue en juego |
-| D-11 | ¿Puede el jugador elegir cualquier orden o va por prioridad? | En 2 jugadores, cualquiera posible. Hay que ejecutar una si existe (el reglamento lo da por obligatorio); reforzar también vale |
+| D-11 | ¿Puede el jugador elegir cualquier orden o va por prioridad? | ✔ En 2 jugadores, cualquiera cuya condición se cumpla. Hay que ejecutar una si existe (el reglamento lo da por obligatorio); reforzar también vale |
 | D-12 | ¿Se puede «Atacar Elviña» si ya es propia? | No: solo si la controla el enemigo |
-| D-13 | Bajas al atacar una plaza | La primera baja del combate cambia el control y no retira ficha; el resto retira bloques de los defensores que tenía la plaza al tirar. La moral se aplica normal, repartida por el dueño |
+| D-13 | Bajas al atacar una plaza | ✔ La primera baja del combate cambia el control y no retira ficha; el resto retira bloques de los defensores que tenía la plaza al tirar. La moral se aplica normal, repartida por el dueño |
 | D-14 | Plaza sin defensores | Si todos los defensores del bando que la controla quedan eliminados (desbandada o destrucción), pasa al otro. La v1.6c solo lo dice de Palavea y de la desbandada |
-| D-15 | Tests de moral: cuántos y cuándo | Uno por punto perdido que deje la pista en 5 o menos. El de la activación, en el paso Combate 1. Los del combate, tras aplicar la tirada final (defensor y luego atacante). Los de pagar un relanzamiento y los de cartas, al momento |
+| D-15 | Tests de moral: cuántos y cuándo | ✔ **Un test por golpe** (§7), con la moral que queda tras él. El de la activación, en el paso Combate 1. Los del combate, tras aplicar la tirada final (defensor y luego atacante). Los de pagar un relanzamiento y los de cartas, al momento. Opción `moraleTests: point` (un test por punto perdido, lectura literal) |
 | D-16 | Salvar de la desbandada | Tras fallar el test; la unidad conserva la moral que tenga (más de 0) |
-| D-17 | La Reserva no tiene moral: ¿cómo paga la activación? | Retira 1 bloque (lectura literal). Opción `reserveActivation: free` |
+| D-17 | La Reserva no tiene moral: ¿cómo paga la activación? | ✔ No paga. Opción `reserveActivation: block` (retira 1 bloque, lectura literal) |
 | D-18 | ¿Las fichas pagadas como coste van al contador de bajas del rival? | Sí: «retirado por cualquier motivo». Las movidas al reforzar, no |
 | D-19 | Refuerzos | Sin límite de bloques por unidad. Si una unidad se queda sin bloques al reforzar, queda destruida y cuenta (salvo la Reserva) |
 | D-20 | Relanzamientos | Solo el atacante, sin límite, cualquier subconjunto de dados; se aplica la última tirada |
@@ -346,16 +353,16 @@ Reglas de la v1.6c (§7), resumidas:
 | D-24 | Reserva común de 25 cubos | Limitada: si se agota, no se recibe. Opción `inertiaSupply: unlimited` |
 | D-25 | Elegir la carta robada (5 cubos) | En la Reorganización, en lugar del robo normal. Después se baraja el mazo |
 | D-26 | Un jugador se queda sin cartas antes que el otro | Pasa sus turnos. La partida acaba cuando ninguno tiene cartas en la mano |
-| D-27 | ¿Qué cuenta como División eliminada? | Británicas: Hill, Bentinck, Paget, Manningham/Leith. Francesas: Mermet, Delaborde, Merle, La Houssaye y Artillería. No cuentan la Reserva ni Moore. Se comprueba al momento |
+| D-27 | ¿Qué cuenta como División eliminada? | ✔ Británicas: Hill, Bentinck, Paget, Manningham/Leith. Francesas: Mermet, Delaborde, Merle, La Houssaye y **Artillería**. No cuentan la Reserva ni Moore. Se comprueba al momento |
 | D-28 | Doble activación de Soult | Ver §8.2. La segunda unidad puede ser la misma si las dos cartas son suyas |
 | D-29 | ¿Cuándo salva Soult? | Tras cualquier test fallido de una unidad francesa, en cualquier turno. No con moral 0 |
-| D-30 | Mercado: evitar el descarte y descartar 3 tácticas | Literal v1.6c: el inactivo lo evita gratis poniendo cubos de la reserva común sobre las demás cartas; el activo, pagando 1. Descartar 3 da 3 cubos (la v2.1 decía 2: opción `discardThreeTactics`) |
+| D-30 | Mercado: evitar el descarte y descartar 3 tácticas | ✔ Literal v1.6c: el inactivo lo evita gratis poniendo cubos de la reserva común sobre las demás cartas; el activo, pagando 1. Descartar 3 da 3 cubos (la v2.1 decía 2: opción `discardThreeTactics`) |
 | D-31 | ¿Cuándo se puede usar una táctica recién comprada? | En cuanto llegue su momento, también ese mismo turno, salvo *Terreno escarpado*. Varias tácticas en el mismo momento, sí |
 | D-32 | «En cualquier momento» | El motor ofrece las tácticas en puntos fijos (§11.1); no hay interrupciones a mitad de un paso |
 | D-33 | *Avanzadillas*: «turno enemigo, tras el combate» | Tras una tirada enemiga, antes de aplicarla (después del combate no tendría efecto) |
 | D-34 | Mano inicial | El británico roba 5 y el francés 6; cada uno se queda 3 |
-| D-35 | El reglamento cuenta 15 bloques británicos; el mapa tiene 14 casillas de salida (Hill 3, Bentinck 3, Paget 2, Manningham/Leith 3, Reserva 3) | Manda el mapa: 14. ¿Falta una casilla o sobra un bloque? |
-| D-36 | *Reorganización*: el PDF de febrero de 2026 dice coste 2 y el render de Tabletopia (10 días posterior) dice 3 | 3, el más reciente |
+| D-35 | El reglamento cuenta 15 bloques británicos; el mapa tiene 14 casillas de salida (Hill 3, Bentinck 3, Paget 2, Manningham/Leith 3, Reserva 3) | ✔ Manda el mapa: 14 |
+| D-36 | *Reorganización*: el PDF de febrero de 2026 dice coste 2 y el render de Tabletopia (10 días posterior) dice 3 | ✔ 3, el más reciente |
 | D-37 | ¿La moral puede superar el máximo? | No |
 | D-38 | Paget | Empieza en #1, donde no combate; su orden 1 lo pasa a #2 sin combate |
 | D-39 | *El tiempo es esencial* | Ver §11.2 |
