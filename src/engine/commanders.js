@@ -84,6 +84,7 @@ export function* mooreRally(g, unitId) {
     if (!card) return true;
     const r = rollDie(g);
     log(g, `Arenga: sale ${r} (${r <= 5 ? 'éxito' : 'fracaso'}).`, r <= 5 ? 'good' : 'bad');
+    yield* beat(g, 'rally', { roll: r, ok: r <= 5 });
     return r <= 5;
 }
 

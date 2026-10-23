@@ -17,6 +17,9 @@ const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
 const REPLAY_MS = { slow: 1700, normal: 950, fast: 400, step: null, off: 0 };
 export const REPLAYS = [['normal', 'Repetición normal'], ['slow', 'Repetición lenta'], ['fast', 'Repetición rápida'], ['step', 'Repetición paso a paso'], ['off', 'Sin repetición']];
 /** Which routine questions of a human are answered by themselves (autoAnswer). */
+/** Speed of the 3D dice for each replay speed (dice3d.js rate). */
+const DICE_RATE = { slow: 1, normal: 1.3, fast: 2.2, step: 1.3, off: 1.6 };
+export const DICE = [['on', 'Dados 3D'], ['off', 'Sin dados 3D']];
 export const AUTO = [['useful', 'Saltar ventanas sin cartas'], ['minimal', 'Solo decisiones importantes'], ['all', 'Preguntar todo']];
 const [W, H] = BOARD.size;
 const SIDES = ['french', 'british'];
@@ -36,7 +39,22 @@ function beatText(b) {
         case 'morale': return `Test de moral de ${UNITS[b.unit].name}: sale ${b.roll} contra ${b.limit}, ${b.ok ? 'aguanta' : 'falla'}`;
         case 'moore_risk': return `Tirada de riesgo de Moore: ${b.dice[0]} + ${b.dice[1]} contra ${b.track}${b.fell ? ': ¡cae abatido!' : ': sale ileso'}`;
         case 'moore_dead': return 'Muere Sir John Moore';
+        case 'rally': return `Arenga de Moore: sale ${b.roll}, ${b.ok ? 'la unidad se salva' : 'no basta'}`;
         default: return b.kind;
+    }
+}
+
+/**
+ * The dice thrown at a beat, for the 3D tray: the attacker's (blue French, red British; only those
+ * rolled, not the fixed 6s), the white die of a morale test, Moore's black dice.
+ */
+function beatDice(b) {
+    switch (b.kind) {
+        case 'roll': return b.thrown.map((value) => ({ sides: 6, value, color: b.side === 'french' ? 'blue' : 'red' }));
+        case 'morale': return [{ sides: 6, value: b.roll, color: 'white' }];
+        case 'moore_risk': return b.dice.map((value) => ({ sides: 6, value, color: 'black' }));
+        case 'rally': return [{ sides: 6, value: b.roll, color: 'black' }];
+        default: return [];
     }
 }
 
@@ -68,7 +86,10 @@ export class GameView {
             replay: REPLAY_MS[ui.replay] !== undefined ? ui.replay : 'normal',
             auto: AUTO.some(([v]) => v === ui.auto) ? ui.auto : 'useful',
             handoff: ui.handoff ?? true,
+            dice: ui.dice === 'off' ? 'off' : 'on',
         };
+        this.tray = null; // the 3D dice (dice3d.js), loaded the first time they are needed
+        this.diceHidden = null; // combat dice being thrown: '?' on screen until they land ('all' or a Set of indexes)
         this.playback = null; // { frames, i, timer }: replay of the last answer
         this.mark = session.state.log.length; // log entries since the last human decision are summarised
         this.shownSide = null; // hotseat: the side the screen was handed to
@@ -82,6 +103,11 @@ export class GameView {
         this.dialog = h('dialog');
         document.body.append(this.preview, this.dialog);
         this.onKey = (e) => {
+            if (this.playback?.rolling && ['Enter', 'Escape', ' '].includes(e.key) && !e.target.closest('input, textarea, select')) {
+                e.preventDefault();
+                this.tray?.then((t) => t?.skip());
+                return;
+            }
             if (e.key === 'z' && (e.ctrlKey || e.metaKey) && !e.target.closest('input, textarea')) {
                 e.preventDefault();
                 this.undo();
@@ -100,7 +126,8 @@ export class GameView {
 
     dispose() {
         clearTimeout(this.timer);
-        if (this.playback) clearTimeout(this.playback.timer);
+        this.stopPlayback();
+        this.tray?.then((t) => t?.destroy());
         document.removeEventListener('keydown', this.onKey);
         this.preview.remove();
         this.dialog.remove();
@@ -111,6 +138,8 @@ export class GameView {
         const pb = this.playback;
         if (!pb) return this.session.state;
         const f = pb.frames[pb.i];
+        // while its dice roll, a step does not show its log lines yet (they would tell the result)
+        if (pb.rolling) return { ...f.state, log: this.session.state.log.slice(0, pb.i ? pb.frames[pb.i - 1].logLen : pb.logStart), pending: null };
         return (f.view ??= { ...f.state, log: this.session.state.log.slice(0, f.logLen), pending: null });
     }
 
@@ -142,7 +171,7 @@ export class GameView {
         const p = this.session.state.pending;
         const logStart = this.session.state.log.length;
         try {
-            this.session.act(answer, { capture: this.ui.replay !== 'off' });
+            this.session.act(answer, { capture: true }); // the snapshots carry the dice of each roll too
             this.error = null;
         } catch (err) {
             if (err instanceof IllegalAction) return this.toast(err.message);
@@ -153,7 +182,10 @@ export class GameView {
         this.selection.clear();
         this.opts.save(this.session, this.players);
         const frames = this.session.frames;
-        if (frames.length && !this.error) this.startPlayback(frames);
+        const withDice = this.ui.dice === 'on' ? frames.filter((f) => beatDice(f.beat).length) : [];
+        if (this.error || !frames.length) this.render();
+        else if (this.ui.replay !== 'off') this.startPlayback(frames, logStart);
+        else if (withDice.length) this.startPlayback(withDice, logStart, { diceOnly: true }); // only the throws
         else this.render();
     }
 
@@ -174,30 +206,69 @@ export class GameView {
 
     // ------------------------------------------------------------ replay
 
-    startPlayback(frames) {
-        this.playback = { frames, i: 0, timer: null };
+    /** diceOnly: no replay asked for, but the dice of these steps are thrown. */
+    startPlayback(frames, logStart, { diceOnly = false } = {}) {
+        this.playback = { frames, i: 0, timer: null, logStart, diceOnly, thrown: -1, rolling: false };
         this.showStep();
     }
 
-    showStep() {
+    /** A step: its dice are thrown first (over the map, with the result hidden), then it is shown. */
+    async showStep() {
         const pb = this.playback;
         clearTimeout(pb.timer);
+        const f = pb.frames[pb.i];
+        const dice = this.ui.dice === 'on' ? beatDice(f.beat) : [];
+        if (dice.length && pb.thrown !== pb.i) {
+            pb.thrown = pb.i;
+            pb.rolling = true;
+            this.diceHidden = f.beat.kind === 'roll' ? (f.beat.rolled.length ? new Set(f.beat.rolled.map(String)) : 'all') : null;
+            this.render();
+            try {
+                await this.throwDice(dice, DICE_RATE[this.ui.replay]);
+            } finally {
+                pb.rolling = false;
+                this.diceHidden = null;
+            }
+            if (this.playback !== pb) return; // skipped meanwhile
+        }
         this.render();
-        const ms = REPLAY_MS[this.ui.replay];
+        const ms = pb.diceOnly ? 150 : REPLAY_MS[this.ui.replay];
         if (ms) pb.timer = setTimeout(() => this.nextStep(), ms);
     }
 
     nextStep() {
         const pb = this.playback;
         if (!pb) return;
+        if (pb.rolling) return void this.tray?.then((t) => t?.skip());
         if (pb.i + 1 >= pb.frames.length) return this.endPlayback();
         pb.i++;
         this.showStep();
     }
 
     stopPlayback() {
-        if (this.playback) clearTimeout(this.playback.timer);
+        const pb = this.playback;
+        if (!pb) return;
+        clearTimeout(pb.timer);
+        if (pb.rolling) this.tray?.then((t) => t?.skip());
         this.playback = null;
+    }
+
+    /** Throws the dice over the map (or the whole window if the map is out of sight). False without WebGL. */
+    async throwDice(dice, rate = 1) {
+        const map = this.root.querySelector('.map');
+        if (!map) return false;
+        this.tray ??= import(new URL('src/ui/dice3d.js', document.baseURI).href)
+            .then((m) => m.createDiceTray())
+            .catch((err) => {
+                console.warn('Sin dados 3D:', err);
+                return null;
+            });
+        const tray = await this.tray;
+        if (!tray) return false;
+        let rect = map.getBoundingClientRect();
+        if (Math.min(rect.bottom, innerHeight) - Math.max(rect.top, 0) < 220) rect = new DOMRect(0, 0, innerWidth, innerHeight);
+        await tray.roll(dice, { rect, rate });
+        return true;
     }
 
     endPlayback() {
@@ -338,6 +409,7 @@ export class GameView {
             botsExist && speedSel,
             sel('replay', REPLAYS, 'Cómo se repite lo que pasa en cada decisión'),
             sel('auto', AUTO, 'Preguntas rutinarias que se responden solas'),
+            sel('dice', DICE, 'Lanzar los dados en 3D sobre el mapa'),
             h('button.small', { onclick: () => this.copyCode() }, 'Copiar código'),
             h('button.small', { onclick: () => this.openDebug() }, 'Depuración'),
             h('button.small', { onclick: () => this.opts.onExit() }, 'Menú'),
@@ -562,8 +634,8 @@ export class GameView {
         const side = f.beat.side ?? g.active;
         return h(
             'section.decision', { 'aria-live': 'polite' },
-            h(`span.who.${CODE[side]}`, null, `Repetición ${pb.i + 1}/${pb.frames.length}`),
-            h('p.prompt', null, beatText(f.beat)),
+            h(`span.who.${CODE[side]}`, null, pb.diceOnly ? 'Dados' : `Repetición ${pb.i + 1}/${pb.frames.length}`),
+            h('p.prompt', null, pb.rolling ? 'Tirando los dados… (un toque o Intro para verlos ya)' : beatText(f.beat)),
             g.combat && this.combatBox(),
             h('div.confirm', null,
                 h('button.primary', { onclick: () => this.nextStep() }, pb.i + 1 < pb.frames.length ? 'Siguiente' : 'Terminar'),
@@ -596,6 +668,8 @@ export class GameView {
             lines.push(h('div.dice', null, c.dice.map((d, i) => {
                 const id = String(i);
                 const can = (pickDice || oneDie) && p.options.some((o) => o.id === id);
+                const hidden = !d.fixed && (this.diceHidden === 'all' || this.diceHidden?.has(id));
+                if (hidden) return h('span.die.rolling', null, '?');
                 const el = h(`span.die${d.fixed ? '.fixed' : ''}${d.v ? cls(d.v) : ''}${can ? '.option' : ''}${pickDice && this.selection.has(id) ? '.selected' : ''}`, { title: d.fixed ? '6 fijo (Brigadas de élite)' : can ? 'Clic para elegir este dado' : null }, d.v || '?');
                 if (can) {
                     el.addEventListener('click', () => {
@@ -607,7 +681,7 @@ export class GameView {
                 }
                 return el;
             })));
-            if (c.rolls) lines.push(h('p.combat-line', null, `${c.rolls === 1 ? 'Primera tirada' : `Tirada ${c.rolls}`}: ${describe(currentResults(c))}`));
+            if (c.rolls && !this.diceHidden) lines.push(h('p.combat-line', null, `${c.rolls === 1 ? 'Primera tirada' : `Tirada ${c.rolls}`}: ${describe(currentResults(c))}`));
         }
         const extras = [c.extraDice && `${c.extraDice > 0 ? '+' : ''}${c.extraDice} dados extra`, c.mooreReroll && 'relanzamiento gratuito de Moore', c.calen && '¡Calen bayonetas! disponible', c.veteranos && 'Veteranos de Iberia', c.vacilacion && 'Vacilación'].filter(Boolean);
         if (extras.length) lines.push(h('p.combat-line.muted', null, extras.join(' · ')));

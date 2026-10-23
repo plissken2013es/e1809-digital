@@ -71,6 +71,7 @@ Las mismas que en Witch Hunter:
 - **Información oculta:** con un solo humano se ve su mano; con dos (hotseat), solo la del que decide. Depuración → «Ver las dos manos».
 - **Preguntas automáticas** (barra superior): «Saltar ventanas sin cartas» (por defecto) pasa solas las ventanas de tácticas en las que solo se podría descartar 3; «Solo decisiones importantes» además no evita descartes del Mercado y roba la carta de arriba; «Preguntar todo» no responde nada solo.
 - **Repetición** de cada respuesta, paso a paso, con las pausas (`beat`) del motor: turno, carta jugada, tirada, resultado, test de moral, riesgo y muerte de Moore (normal, lenta, rápida, con botón «Siguiente» o sin repetición). Al volver a un humano, «Lo que acaba de pasar» resume el registro desde la última decisión de un humano.
+- **Dados 3D** (como en Paranormal y Escape from NY): cada tirada (combate, test de moral, riesgo y arenga de Moore) se lanza sola sobre el mapa al confirmar con un botón, sin arrastrar; el resultado lo fija el motor y el dado cae con esa cara. Se pueden desactivar.
 - **Hotseat:** con dos humanos, una pantalla «Pasa el dispositivo» cada vez que cambia el jugador que decide (se puede desactivar).
 - **Deshacer** vuelve a la última decisión de un humano (con el suelo anti-trampas de la sesión); Depuración permite volver a cualquier decisión.
 - **Móvil:** una columna, con la decisión fija abajo. La versión cuidada para móvil es parte de M5.

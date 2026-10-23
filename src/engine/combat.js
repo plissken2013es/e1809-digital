@@ -111,9 +111,12 @@ function* roll(g, idxs) {
     const c = g.combat;
     for (const i of idxs) c.dice[i].v = rollDie(g);
     c.rolls++;
+    // thrown: what the dice showed when they landed (Vacilación may take 3s away just after)
+    const thrown = idxs.map((i) => c.dice[i].v);
+    const rolled = c.vacilacion ? [] : idxs;
     if (c.vacilacion) c.dice = c.dice.filter((d) => d.fixed || d.v !== 3);
     log(g, `${c.rolls === 1 ? 'Tirada' : 'Relanzamiento'}: ${diceText(c)} → ${describe(currentResults(c))}.`, 'dice');
-    yield* beat(g, 'roll', { dice: c.dice.map((d) => d.v) });
+    yield* beat(g, 'roll', { dice: c.dice.map((d) => d.v), thrown, rolled, side: c.side });
 }
 
 /** After each roll: tactics, dice modifiers, rerolls (paid) or apply [§6, D-20]. */
