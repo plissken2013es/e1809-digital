@@ -1,0 +1,374 @@
+{
+  "_notes": [
+    "Texts come from the text layer of the Tactic PDFs (__reordenado para IA/A4_color_cartas_tacticas_*.pdf, 2026-02) via tools/extract_sources.py -> extracted/tactics_raw.json; tests/data.test.js checks they still match. Printed as is.",
+    "Curated by hand: 'window' (when the engine offers the card, docs/01 §11.1) and the cost of Reorganización (3, from the newer render; the PDF says 2, docs/01 [D-36]).",
+    "One copy of each card: 36 cards, a deck shared by both players.",
+    "ideas_v21: card ideas from the v2.1 draft (§8.5), not printed; texts paraphrased from the draft. Optional module, off by default (docs/01 §15)."
+  ],
+  "back": "assets/cards/backs/tactics.webp",
+  "cards": [
+    {
+      "id": "rumores_de_muerte",
+      "name": "RUMORES DE MUERTE",
+      "cost": 5,
+      "text": "Se dice que el general enemigo ha muerto. -3 de moral que tu enemigo ha de repartir entre sus tropas.",
+      "timing": "JUGAR EN CUALQUIER MOMENTO",
+      "window": "any",
+      "image": "assets/cards/tactics/rumores_de_muerte.webp"
+    },
+    {
+      "id": "calen_bayonetas",
+      "name": "¡CALEN BAYONETAS!",
+      "cost": 3,
+      "text": "Se puede sumar/restar 1 a cualquier dado una vez por combate. El dado podría relanzarse posteriormente. No aplica a la artillería.",
+      "timing": "JUGAR EN TU TURNO ANTES DEL COMBATE",
+      "window": "own_before_combat",
+      "image": "assets/cards/tactics/calen_bayonetas.webp"
+    },
+    {
+      "id": "avanzadillas",
+      "name": "AVANZADILLAS",
+      "cost": 3,
+      "text": "El enemigo debe relanzar el dado que elijas.",
+      "timing": "JUGAR EN EL TURNO ENEMIGO, TRAS EL COMBATE",
+      "window": "enemy_after_roll",
+      "image": "assets/cards/tactics/avanzadillas.webp"
+    },
+    {
+      "id": "arenga",
+      "name": "ARENGA",
+      "cost": 3,
+      "text": "Se suma +2 al límite de desbandada en un test de moral.",
+      "timing": "JUGAR ANTES DE UN TEST DE MORAL",
+      "window": "before_morale_test",
+      "image": "assets/cards/tactics/arenga.webp"
+    },
+    {
+      "id": "voluntad",
+      "name": "VOLUNTAD",
+      "cost": 1,
+      "text": "Relanza un único dado sin pagar coste por ello (sólo al lanzar dados durante el combate).",
+      "timing": "JUGAR EN TU TURNO DURANTE EL COMBATE",
+      "window": "own_after_roll",
+      "image": "assets/cards/tactics/voluntad.webp"
+    },
+    {
+      "id": "confianza",
+      "name": "CONFIANZA",
+      "cost": 1,
+      "text": "+1 de moral para una formación si causa al menos 2 impactos a la moral de un enemigo en combate.",
+      "timing": "JUGAR EN TU TURNO TRAS EL COMBATE",
+      "window": "own_after_combat",
+      "image": "assets/cards/tactics/confianza.webp"
+    },
+    {
+      "id": "acero_frio",
+      "name": "ACERO FRÍO",
+      "cost": 4,
+      "text": "+1 o -1 a cualquier dado una vez por combate. El dado se puede relanzar posteriormente. No aplica a la artillería.",
+      "timing": "JUGAR EN COMBATE",
+      "window": "after_roll",
+      "image": "assets/cards/tactics/acero_frio.webp"
+    },
+    {
+      "id": "curtido_en_mil_batallas",
+      "name": "CURTIDO EN MIL BATALLAS",
+      "cost": 4,
+      "text": "Dobla la cantidad de tu reserva de cubos de Inercia de Combate.",
+      "timing": "JUGAR EN CUALQUIER MOMENTO DE TU TURNO",
+      "window": "own_any",
+      "image": "assets/cards/tactics/curtido_en_mil_batallas.webp"
+    },
+    {
+      "id": "veteranos_de_iberia",
+      "name": "VETERANOS DE IBERIA",
+      "cost": 2,
+      "text": "La tercera tirada de dados (segundo relanzamiento) del combate es gratuita.",
+      "timing": "JUGAR EN TU TURNO DURANTE EL COMBATE",
+      "window": "own_combat",
+      "image": "assets/cards/tactics/veteranos_de_iberia.webp"
+    },
+    {
+      "id": "riflemen_vs_voltigeurs",
+      "name": "RIFLEMEN VS. VOLTIGEURS",
+      "cost": 4,
+      "text": "Puedes relanzar todos los unos y doses que obtengas este turno sin coste adicional.",
+      "timing": "JUGAR EN TU TURNO ANTES DEL COMBATE",
+      "window": "own_before_combat",
+      "image": "assets/cards/tactics/riflemen_vs_voltigeurs.webp"
+    },
+    {
+      "id": "reorganizacion",
+      "name": "REORGANIZACIÓN",
+      "cost": 3,
+      "text": "+1 de moral para cualquier unidad que elijas.",
+      "timing": "JUGAR EN CUALQUIER MOMENTO",
+      "window": "any",
+      "image": "assets/cards/tactics/reorganizacion.webp"
+    },
+    {
+      "id": "maniobra_sorpresa",
+      "name": "MANIOBRA SORPRESA",
+      "cost": 3,
+      "text": "Recibe los cubos de inercia de la carta que juegues y activa otra formación en su lugar (ésta última debe pagar el coste de activación).",
+      "timing": "JUGAR EN LA FASE DE PLANIFICACIÓN",
+      "window": "own_planning",
+      "image": "assets/cards/tactics/maniobra_sorpresa.webp"
+    },
+    {
+      "id": "fuerzas_de_flaqueza",
+      "name": "FUERZAS DE FLAQUEZA",
+      "cost": 1,
+      "text": "Aumenta en 2 la moral de una formación que haya sufrido 2 impactos sumando las bajas y/o la moral (y no haya sido destruida o desbandada).",
+      "timing": "JUGAR EN TU TURNO TRAS EL COMBATE",
+      "window": "own_after_combat",
+      "image": "assets/cards/tactics/fuerzas_de_flaqueza.webp"
+    },
+    {
+      "id": "terreno_escarpado",
+      "name": "TERRENO ESCARPADO",
+      "cost": 3,
+      "text": "El oponente pierde todos sus cubos de inercia.",
+      "timing": "JUGAR EN TU TURNO. NO SE PUEDE JUGAR EN EL TURNO EN EL QUE SE COMPRA",
+      "window": "own_any",
+      "image": "assets/cards/tactics/terreno_escarpado.webp"
+    },
+    {
+      "id": "cobardes",
+      "name": "COBARDES",
+      "cost": 2,
+      "text": "El oponente pierde una carta de táctica de forma aleatoria.",
+      "timing": "JUGAR EN TU TURNO EN CUALQUIER MOMENTO",
+      "window": "own_any",
+      "image": "assets/cards/tactics/cobardes.webp"
+    },
+    {
+      "id": "cambio_de_tornas",
+      "name": "CAMBIO DE TORNAS",
+      "cost": 3,
+      "text": "Manda cualquier carta de táctica del oponente a la pila de descartes.",
+      "timing": "JUGAR EN CUALQUIER MOMENTO",
+      "window": "any",
+      "image": "assets/cards/tactics/cambio_de_tornas.webp"
+    },
+    {
+      "id": "los_hombres_estan_agotados",
+      "name": "LOS HOMBRES ESTÁN AGOTADOS",
+      "cost": 4,
+      "permanent": true,
+      "text": "A tu oponente le cuesta 4 cubos de inercia relanzar los dados en combate, en lugar de 3.",
+      "timing": "TIENE EFECTO INMEDIATO TRAS COMPRARLA",
+      "window": "on_purchase",
+      "image": "assets/cards/tactics/los_hombres_estan_agotados.webp"
+    },
+    {
+      "id": "a_sangre_y_fuego",
+      "name": "A SANGRE Y FUEGO",
+      "cost": 4,
+      "text": "Tomar Elviña o Palavea de forma automática. Es necesario activar una unidad que pugna por la posición y pagar su coste, pero no se tiran dados.",
+      "timing": "JUGAR EN TU TURNO EN LUGAR DEL COMBATE",
+      "window": "own_instead_of_combat",
+      "image": "assets/cards/tactics/a_sangre_y_fuego.webp"
+    },
+    {
+      "id": "calma_tensa",
+      "name": "CALMA TENSA",
+      "cost": 1,
+      "text": "En lugar de pagar el coste de activación, una unidad recibirá +1 de moral al activarse, pero no hará nada.",
+      "timing": "JUGAR EN TU FASE DE PLANIFICACIÓN",
+      "window": "own_planning",
+      "image": "assets/cards/tactics/calma_tensa.webp"
+    },
+    {
+      "id": "reagrupacion",
+      "name": "REAGRUPACIÓN",
+      "cost": 3,
+      "text": "Evita que una unidad se desbande al fallar un test de moral.",
+      "timing": "JUGAR TRAS UN TEST DE MORAL FALLIDO",
+      "window": "after_failed_morale_test",
+      "image": "assets/cards/tactics/reagrupacion.webp"
+    },
+    {
+      "id": "coraje_liquido",
+      "name": "CORAJE LÍQUIDO",
+      "cost": 3,
+      "text": "La formación elegida para ser activada no paga coste de activación este turno.",
+      "timing": "JUGAR EN LA FASE DE PLANIFICACIÓN",
+      "window": "own_planning",
+      "image": "assets/cards/tactics/coraje_liquido.webp"
+    },
+    {
+      "id": "paralizados_por_el_miedo",
+      "name": "PARALIZADOS POR EL MIEDO",
+      "cost": 2,
+      "text": "Elige una formación enemiga para forzarla a pasar un test de moral.",
+      "timing": "JUGAR EN TU TURNO EN CUALQUIER MOMENTO",
+      "window": "own_any",
+      "image": "assets/cards/tactics/paralizados_por_el_miedo.webp"
+    },
+    {
+      "id": "el_curso_de_la_accion",
+      "name": "EL CURSO DE LA ACCIÓN",
+      "cost": 2,
+      "text": "Cada doble 6 obtenido hace recuperar +1 de moral a la unidad que ha atacado.",
+      "timing": "JUGAR EN TU TURNO TRAS EL COMBATE",
+      "window": "own_after_combat",
+      "image": "assets/cards/tactics/el_curso_de_la_accion.webp"
+    },
+    {
+      "id": "el_tiempo_es_esencial",
+      "name": "EL TIEMPO ES ESENCIAL",
+      "cost": 6,
+      "text": "Descarta las 2 primeras cartas de cada mazo de acción al fondo de la pila o baraja los descartes de cada mazo, toma 2 cartas y baraja con ellas los mazos de acción. Se rellenan las manos.",
+      "timing": "JUGAR AL INICIO DEL TURNO FRANCÉS",
+      "window": "french_turn_start",
+      "image": "assets/cards/tactics/el_tiempo_es_esencial.webp"
+    },
+    {
+      "id": "cirujanos",
+      "name": "CIRUJANOS",
+      "cost": 3,
+      "text": "Devuelve 1 marcador de tropa perdido como baja en combate, si la formación no resulta destruida. (No aplica a la Artillería ni a las fichas retiradas para relanzar.)",
+      "timing": "JUGAR EN COMBATE TRAS SUFRIR BAJAS",
+      "window": "after_own_casualties",
+      "image": "assets/cards/tactics/cirujanos.webp"
+    },
+    {
+      "id": "prisioneros",
+      "name": "PRISIONEROS",
+      "cost": 3,
+      "text": "Robar una de las cartas de táctica del oponente. La carta recibida no se podrá usar en este turno.",
+      "timing": "JUGAR EN CUALQUIER MOMENTO",
+      "window": "any",
+      "image": "assets/cards/tactics/prisioneros.webp"
+    },
+    {
+      "id": "recapacitando",
+      "name": "RECAPACITANDO",
+      "cost": 2,
+      "text": "Compra cualquier carta de tácticas que haya sido descartada pagando por ella como es habitual. No se actualiza la fila de Vientos de Guerra.",
+      "timing": "JUGAR EN TU TURNO EN LA REORGANIZACIÓN",
+      "window": "own_reorganization",
+      "image": "assets/cards/tactics/recapacitando.webp"
+    },
+    {
+      "id": "concentracion",
+      "name": "CONCENTRACIÓN",
+      "cost": 3,
+      "text": "+1 dado para el atacante en este turno.",
+      "timing": "JUGAR EN TU TURNO ANTES DEL COMBATE",
+      "window": "own_before_combat",
+      "image": "assets/cards/tactics/concentracion.webp"
+    },
+    {
+      "id": "impetu_inusitado",
+      "name": "ÍMPETU INUSITADO",
+      "cost": 4,
+      "text": "Cambia un dado a cualquiera de sus caras. Sólo en combate. El atacante podría volver a lanzar el dado (pagando el coste).",
+      "timing": "JUGAR EN TU TURNO DURANTE EL COMBATE",
+      "window": "own_after_roll",
+      "image": "assets/cards/tactics/impetu_inusitado.webp"
+    },
+    {
+      "id": "a_cubierto",
+      "name": "¡A CUBIERTO!",
+      "cost": 3,
+      "text": "-1 dado para el atacante en este turno.",
+      "timing": "JUGAR EN EL TURNO ENEMIGO ANTES DEL COMBATE",
+      "window": "enemy_before_combat",
+      "image": "assets/cards/tactics/a_cubierto.webp"
+    },
+    {
+      "id": "vacilacion",
+      "name": "VACILACIÓN",
+      "cost": 2,
+      "text": "Los dados que obtengan un 3 se retiran durante todo el combate en este turno.",
+      "timing": "JUGAR EN EL TURNO ENEMIGO ANTES DEL COMBATE",
+      "window": "enemy_before_combat",
+      "image": "assets/cards/tactics/vacilacion.webp"
+    },
+    {
+      "id": "en_el_fragor_de_la_batalla",
+      "name": "EN EL FRAGOR DE LA BATALLA",
+      "cost": 2,
+      "text": "Roba la siguiente carta del mazo enemigo: será la unidad que se active este turno. (El oponente no robará carta al final del turno, si ya tiene 3 en mano).",
+      "timing": "JUGAR EN EL TURNO ENEMIGO ANTES DE LA FASE DE PLANIFICACIÓN",
+      "window": "enemy_before_planning",
+      "image": "assets/cards/tactics/en_el_fragor_de_la_batalla.webp"
+    },
+    {
+      "id": "bano_de_sangre",
+      "name": "BAÑO DE SANGRE",
+      "cost": 4,
+      "text": "Si una de las bajas que causas en combate sirve para cambiar la presencia militar en Elviña o Palavea, asigna una baja automática adicional al oponente.",
+      "timing": "JUGAR EN TU TURNO TRAS EL COMBATE",
+      "window": "own_after_combat",
+      "image": "assets/cards/tactics/bano_de_sangre.webp"
+    },
+    {
+      "id": "brigadas_de_elite",
+      "name": "BRIGADAS DE ÉLITE",
+      "cost": 3,
+      "text": "Uno de los dados que intervienen en el combate se deja aparte marcando un 6 automático. (Ni se lanza ni se puede modificar de ninguna forma).",
+      "timing": "JUGAR EN TU TURNO ANTES DEL COMBATE",
+      "window": "own_before_combat",
+      "image": "assets/cards/tactics/brigadas_de_elite.webp"
+    },
+    {
+      "id": "improvisacion",
+      "name": "IMPROVISACIÓN",
+      "cost": 2,
+      "text": "Puedes transferir hasta 2 puntos de moral entre dos de tus formaciones. (Lanzar dados para pasar test de moral, si procede).",
+      "timing": "JUGAR EN TU TURNO CUALQUIER MOMENTO",
+      "window": "own_any",
+      "image": "assets/cards/tactics/improvisacion.webp"
+    },
+    {
+      "id": "mensajeros",
+      "name": "MENSAJEROS",
+      "cost": 2,
+      "text": "No recibes los cubos de inercia de la carta que has jugado, y puedes activar cualquier otra formación (que paga el coste de activación correspondiente).",
+      "timing": "JUGAR EN TU TURNO, FASE DE PLANIFICACIÓN",
+      "window": "own_planning",
+      "image": "assets/cards/tactics/mensajeros.webp"
+    }
+  ],
+  "ideas_v21": [
+    {
+      "id": "batallon_de_la_coruna",
+      "name": "Batallón de La Coruña",
+      "cost": 4,
+      "side": "british",
+      "text": "+2 de moral a los británicos. (El alcalde de La Coruña recorría las calles dando ánimos; a comerciantes y barberos se les dieron mosquetes.)"
+    },
+    {
+      "id": "flota_inglesa",
+      "name": "Flota inglesa",
+      "cost": 3,
+      "side": "british",
+      "text": "+1 a los dados o volver a tirar 1 dado."
+    },
+    {
+      "id": "tropas_francesas_no_incluidas",
+      "name": "Tropas francesas no incluidas",
+      "cost": 3,
+      "side": "french",
+      "text": "Aportan 1 de moral."
+    },
+    {
+      "id": "tropas_britanicas_no_incluidas",
+      "name": "Tropas británicas no incluidas",
+      "cost": 3,
+      "side": "british",
+      "text": "Aportan 1 de moral (artillería, ...)."
+    },
+    {
+      "id": "bayoneta_francesa",
+      "name": "Bayoneta",
+      "cost": "4 o 5",
+      "side": "french",
+      "permanent": true,
+      "text": "Sólo para franceses, permanente."
+    }
+  ]
+}

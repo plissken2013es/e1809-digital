@@ -1,0 +1,185 @@
+{
+  "_notes": [
+    "Hand-curated from the unit cards (assets/cards/units, 2022 renders) and the commander cards (2026 art). Not generated.",
+    "Printed texts are kept as they are on the cards ('text'); the fields beside them are their formal reading. docs/01 explains how each one is applied.",
+    "orders: alternatives (the '~' on the card), listed in printed order. 'if' is a list of conditions that must all hold; 'a|b' inside one condition means either. Conditions: elvina_british, elvina_french, palavea_british, palavea_french, paget_at:<1|2>, alive:<unit>, eliminated:<unit>.",
+    "An 'attack' on 'elvina' or 'palavea' is only possible while the enemy controls it (docs/01 [D-12]).",
+    "modifiers: 'dice' changes the dice of every combat of the unit while 'if' holds; 'keyword' marks a rule explained in docs/01.",
+    "morale.max is the starting value (the highest box of the track); boxes below 6 are underlined on the cards: losing a point into them forces a morale test.",
+    "blocks: troop markers at the start, counted on the map (src/data/board.json). The rulebook says 15 British blocks; the map has 14 start slots (docs/01 [D-35]).",
+    "action_cards: how many Action cards of that unit give 1, 2 or 3 Inertia cubes (the icons in the card's corner); src/data/actions.json has the 30 cards."
+  ],
+  "units": [
+    {
+      "id": "hill", "side": "british", "name": "Hill", "type": "infantry",
+      "dice": 5, "activations": 3, "morale": { "max": 10 }, "blocks": 3, "moore_position": 3,
+      "orders": [
+        { "text": "Atacar Palavea", "act": "attack", "targets": ["palavea"] },
+        { "text": "Atacar a la Artillería (-3 dados)", "act": "attack", "targets": ["artilleria"], "dice": -3 },
+        { "text": "Si Palavea es británica, atacar a Delaborde", "if": ["palavea_british"], "act": "attack", "targets": ["delaborde"] },
+        { "text": "Si Delaborde está derrotado, atacar Artillería o a Merle", "if": ["eliminated:delaborde"], "act": "attack", "targets": ["artilleria", "merle"] }
+      ],
+      "modifiers": [
+        { "text": "+1 dado si Palavea", "dice": 1, "if": ["palavea_british"] },
+        { "text": "Bayoneta", "keyword": "bayonet" }
+      ],
+      "action_cards": { "1": 1, "2": 1, "3": 1 },
+      "card": "assets/cards/units/hill.webp"
+    },
+    {
+      "id": "bentinck", "side": "british", "name": "Bentinck", "type": "infantry",
+      "dice": 5, "activations": 4, "morale": { "max": 10 }, "blocks": 3, "moore_position": 1,
+      "orders": [
+        { "text": "Atacar Elviña", "act": "attack", "targets": ["elvina"] },
+        { "text": "Si Elviña británica, atacar Mermet", "if": ["elvina_british"], "act": "attack", "targets": ["mermet"] },
+        { "text": "Reforzar Manningham / Leith (1-2 piezas)", "act": "reinforce", "targets": ["manningham_leith"], "pieces": [1, 2] }
+      ],
+      "modifiers": [
+        { "text": "+1 dado si Paget#2", "dice": 1, "if": ["paget_at:2"] },
+        { "text": "-1 dado si Artillería", "dice": -1, "if": ["alive:artilleria"] },
+        { "text": "Bayoneta", "keyword": "bayonet" }
+      ],
+      "action_cards": { "1": 1, "2": 2, "3": 1 },
+      "card": "assets/cards/units/bentinck.webp"
+    },
+    {
+      "id": "paget", "side": "british", "name": "Paget", "type": "infantry",
+      "dice": 5, "activations": 2, "morale": { "max": 9 }, "blocks": 2, "moore_position": 1,
+      "orders": [
+        { "text": "Si está en Paget#1, mover a Paget#2. No hay combate.", "if": ["paget_at:1"], "act": "move", "to": 2 },
+        { "text": "Si está en Paget#2, atacar a La Houssaye", "if": ["paget_at:2"], "act": "attack", "targets": ["la_houssaye"] },
+        { "text": "Si está en Paget#2 y La Houssaye destruido, atacar Mermet (-1 dado)", "if": ["paget_at:2", "eliminated:la_houssaye"], "act": "attack", "targets": ["mermet"], "dice": -1 }
+      ],
+      "modifiers": [],
+      "action_cards": { "1": 1, "2": 1 },
+      "card": "assets/cards/units/paget.webp"
+    },
+    {
+      "id": "manningham_leith", "side": "british", "name": "Manningham/Leith", "type": "infantry",
+      "dice": 5, "activations": 4, "morale": { "max": 10 }, "blocks": 3, "moore_position": 2,
+      "orders": [
+        { "text": "Atacar Merle", "act": "attack", "targets": ["merle"] },
+        { "text": "Atacar Elviña (-1 dado)", "act": "attack", "targets": ["elvina"], "dice": -1 },
+        { "text": "Atacar Artillería (-2 dados)", "act": "attack", "targets": ["artilleria"], "dice": -2 },
+        { "text": "Reforzar Bentinck (1-2 piezas)", "act": "reinforce", "targets": ["bentinck"], "pieces": [1, 2] }
+      ],
+      "modifiers": [
+        { "text": "-1 dado si Artillería activa", "dice": -1, "if": ["alive:artilleria"] },
+        { "text": "Bayoneta", "keyword": "bayonet" }
+      ],
+      "action_cards": { "1": 1, "2": 2, "3": 1 },
+      "card": "assets/cards/units/manningham_leith.webp"
+    },
+    {
+      "id": "reserva", "side": "british", "name": "Reserva", "type": "reserve",
+      "dice": 0, "activations": 2, "morale": null, "blocks": 3, "moore_position": null,
+      "subtitle": "Crawfurd / Warde. No se desbandan",
+      "orders": [
+        { "text": "Reforzar (1-2 piezas) a Hill o Manningham/Leith o Bentinck. Las piezas se pueden repartir entre distintas unidades.", "act": "reinforce", "targets": ["hill", "manningham_leith", "bentinck"], "pieces": [1, 2], "split": true }
+      ],
+      "modifiers": [
+        { "text": "No combate", "keyword": "no_combat" },
+        { "text": "No es derrotado", "keyword": "never_eliminated" }
+      ],
+      "action_cards": { "1": 2 },
+      "card": "assets/cards/units/reserva.webp"
+    },
+    {
+      "id": "mermet", "side": "french", "name": "Mermet", "type": "infantry",
+      "dice": 5, "activations": 4, "morale": { "max": 11 }, "blocks": 5,
+      "orders": [
+        { "text": "Atacar Elviña", "act": "attack", "targets": ["elvina"] },
+        { "text": "Si Elviña es francesa, atacar a Bentinck", "if": ["elvina_french"], "act": "attack", "targets": ["bentinck"] },
+        { "text": "Si Bentinck está derrotado, atacar a Manningham / Leith (+1 dado)", "if": ["eliminated:bentinck"], "act": "attack", "targets": ["manningham_leith"], "dice": 1 }
+      ],
+      "modifiers": [
+        { "text": "+1 dado si Elviña", "dice": 1, "if": ["elvina_french"] },
+        { "text": "-1 dado si Artillería muerta", "dice": -1, "if": ["eliminated:artilleria"] }
+      ],
+      "action_cards": { "1": 1, "2": 2, "3": 1 },
+      "card": "assets/cards/units/mermet.webp"
+    },
+    {
+      "id": "delaborde", "side": "french", "name": "Delaborde", "type": "infantry",
+      "dice": 5, "activations": 3, "morale": { "max": 10 }, "blocks": 4,
+      "orders": [
+        { "text": "Atacar Palavea", "act": "attack", "targets": ["palavea"] },
+        { "text": "Si Palavea es francesa, atacar a Hill", "if": ["palavea_french"], "act": "attack", "targets": ["hill"] },
+        { "text": "Si Hill está derrotado, atacar a Manningham/Leith", "if": ["eliminated:hill"], "act": "attack", "targets": ["manningham_leith"] }
+      ],
+      "modifiers": [
+        { "text": "+1 dado si Palavea francesa", "dice": 1, "if": ["palavea_french"] },
+        { "text": "-1 dado si Artillería muerta", "dice": -1, "if": ["eliminated:artilleria"] }
+      ],
+      "action_cards": { "1": 1, "2": 1, "3": 1 },
+      "card": "assets/cards/units/delaborde.webp"
+    },
+    {
+      "id": "merle", "side": "french", "name": "Merle", "type": "infantry",
+      "dice": 4, "activations": 4, "morale": { "max": 11 }, "blocks": 5,
+      "orders": [
+        { "text": "Atacar Manningham/Leith", "act": "attack", "targets": ["manningham_leith"] },
+        { "text": "Si Elviña es francesa, atacar a Bentinck", "if": ["elvina_french"], "act": "attack", "targets": ["bentinck"] },
+        { "text": "Si Manningham/Leith están derrotados, atacar a Hill o a Bentinck", "if": ["eliminated:manningham_leith"], "act": "attack", "targets": ["hill", "bentinck"] }
+      ],
+      "modifiers": [
+        { "text": "+1 dado si Elviña", "dice": 1, "if": ["elvina_french"] },
+        { "text": "-1 dado si Artillería muerta", "dice": -1, "if": ["eliminated:artilleria"] }
+      ],
+      "action_cards": { "1": 1, "2": 2, "3": 1 },
+      "card": "assets/cards/units/merle.webp"
+    },
+    {
+      "id": "la_houssaye", "side": "french", "name": "La Houssaye", "type": "cavalry",
+      "dice": 4, "activations": 2, "morale": { "max": 9 }, "blocks": 2,
+      "orders": [
+        { "text": "Si Paget está en #1 (o destruido), atacar a Bentinck", "if": ["paget_at:1|eliminated:paget"], "act": "attack", "targets": ["bentinck"] },
+        { "text": "Atacar a Paget en #2", "if": ["paget_at:2"], "act": "attack", "targets": ["paget"] }
+      ],
+      "modifiers": [
+        { "text": "+1 dado si Elviña francesa", "dice": 1, "if": ["elvina_french"] }
+      ],
+      "action_cards": { "1": 2 },
+      "card": "assets/cards/units/la_houssaye.webp"
+    },
+    {
+      "id": "artilleria", "side": "french", "name": "Artillería", "type": "artillery",
+      "dice": 4, "activations": 2, "morale": { "max": 10 }, "blocks": 3,
+      "orders": [
+        { "text": "Atacar Elviña", "act": "attack", "targets": ["elvina"] },
+        { "text": "Atacar (-1 dado) a Bentinck o a Manningham/Leith", "act": "attack", "targets": ["bentinck", "manningham_leith"], "dice": -1 },
+        { "text": "Si Elviña es francesa, atacar a Bentinck o a Manningham/Leith", "if": ["elvina_french"], "act": "attack", "targets": ["bentinck", "manningham_leith"] }
+      ],
+      "modifiers": [
+        { "text": "Las parejas de 1s equivalen a 6s. Ignorar 2s.", "keyword": "artillery_dice" },
+        { "text": "Si Moore está en #1 o #2, avanzar +2 el marcador de Honor y forzar la tirada inglesa", "keyword": "moore_under_fire" }
+      ],
+      "action_cards": { "1": 1, "2": 1 },
+      "card": "assets/cards/units/artilleria.webp"
+    }
+  ],
+  "commanders": [
+    {
+      "id": "moore", "side": "british", "name": "Sir John Moore",
+      "text": [
+        "Cuando Moore está apoyando, elige entre: > un relanzamiento de dados gratuito o > +1 dado en el ataque",
+        "Moore puede evitar una desbandada: avanza dos posiciones el marcador de Honor (lanzando los 2 dados, si procede). Luego lanza 1 dado: evitar la desbandada tiene éxito con resultado de 1 a 5.",
+        "Cuando Moore muere por acción británica, no se retira la ficha hasta el final del turno inglés, y los beneficios de su apoyo siguen siendo efectivos.",
+        "Al morir Moore, hay que repartir -3 moral entre unidades."
+      ],
+      "track": { "min": 1, "max": 12, "risk_above": 2 },
+      "positions": { "1": ["paget", "bentinck"], "2": ["manningham_leith"], "3": ["hill"] },
+      "card": "assets/cards/units/moore.webp"
+    },
+    {
+      "id": "soult", "side": "french", "name": "Mariscal Jean de Dieu Soult",
+      "text": [
+        "Soult permite activar 2 unidades en el mismo turno, mostrando las cartas de una en una. No se obtienen cubos por las cartas mostradas, sino los 5 cubos de esta tarjeta. Se pueden repartir 2 dados adicionales en las acciones de combate que se produzcan. Al final del turno, una de las cartas jugadas vuelve a la mano, la otra se descarta normalmente.",
+        "O bien, se permite salvar a una formación cualquiera de la desbandada.",
+        "En cualquier caso, Soult queda agotado: tiene un único uso."
+      ],
+      "cubes": 5, "extra_dice": 2,
+      "card": "assets/cards/units/soult.webp"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "elvina-1809",
+  "private": true,
+  "type": "module",
+  "description": "Web prototype of the card-driven wargame Elviña 1809, for debugging and balancing its rules",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "serve": "python tools/serve.py 8012"
+  }
+}

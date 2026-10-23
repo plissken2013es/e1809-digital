@@ -1,0 +1,43 @@
+{
+  "_notes": [
+    "Hand-curated from the card images (assets/cards/actions, Tabletopia renders 2026-02). Not generated.",
+    "cubes: Inertia cubes shown at the bottom of the card. horse: the red horse icon (one free move of Moore, docs/01 §8.1).",
+    "Every card activates its unit; ids are <unit>-<n> in sheet order."
+  ],
+  "backs": {
+    "british": "assets/cards/backs/action_british.webp",
+    "french": "assets/cards/backs/action_french.webp"
+  },
+  "cards": [
+    { "id": "paget-1", "side": "british", "unit": "paget", "cubes": 2, "horse": false, "image": "assets/cards/actions/paget-1.webp" },
+    { "id": "paget-2", "side": "british", "unit": "paget", "cubes": 1, "horse": true, "image": "assets/cards/actions/paget-2.webp" },
+    { "id": "hill-1", "side": "british", "unit": "hill", "cubes": 1, "horse": true, "image": "assets/cards/actions/hill-1.webp" },
+    { "id": "hill-2", "side": "british", "unit": "hill", "cubes": 2, "horse": false, "image": "assets/cards/actions/hill-2.webp" },
+    { "id": "hill-3", "side": "british", "unit": "hill", "cubes": 3, "horse": false, "image": "assets/cards/actions/hill-3.webp" },
+    { "id": "bentinck-1", "side": "british", "unit": "bentinck", "cubes": 3, "horse": false, "image": "assets/cards/actions/bentinck-1.webp" },
+    { "id": "bentinck-2", "side": "british", "unit": "bentinck", "cubes": 2, "horse": false, "image": "assets/cards/actions/bentinck-2.webp" },
+    { "id": "bentinck-3", "side": "british", "unit": "bentinck", "cubes": 2, "horse": false, "image": "assets/cards/actions/bentinck-3.webp" },
+    { "id": "bentinck-4", "side": "british", "unit": "bentinck", "cubes": 1, "horse": false, "image": "assets/cards/actions/bentinck-4.webp" },
+    { "id": "reserva-1", "side": "british", "unit": "reserva", "cubes": 1, "horse": false, "image": "assets/cards/actions/reserva-1.webp" },
+    { "id": "reserva-2", "side": "british", "unit": "reserva", "cubes": 1, "horse": true, "image": "assets/cards/actions/reserva-2.webp" },
+    { "id": "manningham_leith-1", "side": "british", "unit": "manningham_leith", "cubes": 3, "horse": false, "image": "assets/cards/actions/manningham_leith-1.webp" },
+    { "id": "manningham_leith-2", "side": "british", "unit": "manningham_leith", "cubes": 2, "horse": false, "image": "assets/cards/actions/manningham_leith-2.webp" },
+    { "id": "manningham_leith-3", "side": "british", "unit": "manningham_leith", "cubes": 2, "horse": false, "image": "assets/cards/actions/manningham_leith-3.webp" },
+    { "id": "manningham_leith-4", "side": "british", "unit": "manningham_leith", "cubes": 1, "horse": false, "image": "assets/cards/actions/manningham_leith-4.webp" },
+    { "id": "artilleria-1", "side": "french", "unit": "artilleria", "cubes": 2, "horse": false, "image": "assets/cards/actions/artilleria-1.webp" },
+    { "id": "artilleria-2", "side": "french", "unit": "artilleria", "cubes": 1, "horse": false, "image": "assets/cards/actions/artilleria-2.webp" },
+    { "id": "delaborde-1", "side": "french", "unit": "delaborde", "cubes": 1, "horse": false, "image": "assets/cards/actions/delaborde-1.webp" },
+    { "id": "delaborde-2", "side": "french", "unit": "delaborde", "cubes": 2, "horse": false, "image": "assets/cards/actions/delaborde-2.webp" },
+    { "id": "delaborde-3", "side": "french", "unit": "delaborde", "cubes": 3, "horse": false, "image": "assets/cards/actions/delaborde-3.webp" },
+    { "id": "merle-1", "side": "french", "unit": "merle", "cubes": 3, "horse": false, "image": "assets/cards/actions/merle-1.webp" },
+    { "id": "merle-2", "side": "french", "unit": "merle", "cubes": 2, "horse": false, "image": "assets/cards/actions/merle-2.webp" },
+    { "id": "merle-3", "side": "french", "unit": "merle", "cubes": 2, "horse": false, "image": "assets/cards/actions/merle-3.webp" },
+    { "id": "merle-4", "side": "french", "unit": "merle", "cubes": 1, "horse": false, "image": "assets/cards/actions/merle-4.webp" },
+    { "id": "la_houssaye-1", "side": "french", "unit": "la_houssaye", "cubes": 1, "horse": false, "image": "assets/cards/actions/la_houssaye-1.webp" },
+    { "id": "la_houssaye-2", "side": "french", "unit": "la_houssaye", "cubes": 1, "horse": false, "image": "assets/cards/actions/la_houssaye-2.webp" },
+    { "id": "mermet-1", "side": "french", "unit": "mermet", "cubes": 3, "horse": false, "image": "assets/cards/actions/mermet-1.webp" },
+    { "id": "mermet-2", "side": "french", "unit": "mermet", "cubes": 2, "horse": false, "image": "assets/cards/actions/mermet-2.webp" },
+    { "id": "mermet-3", "side": "french", "unit": "mermet", "cubes": 2, "horse": false, "image": "assets/cards/actions/mermet-3.webp" },
+    { "id": "mermet-4", "side": "french", "unit": "mermet", "cubes": 1, "horse": false, "image": "assets/cards/actions/mermet-4.webp" }
+  ]
+}
