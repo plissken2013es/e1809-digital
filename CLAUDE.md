@@ -41,5 +41,5 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 
 ## Tests
 
-- `npm test`: datos (`data.test.js`), reglas con escenarios y dados forzados (`rules.test.js`) y simulación (`simulation.test.js`: bots aleatorio, codicioso y mixto con todas las opciones de reglas; invariantes tras cada respuesta). `SIM_GAMES=2000 npm test` para más partidas.
+- `npm test`: datos (`data.test.js`), reglas con escenarios y dados forzados (`rules.test.js`), una prueba por carta de Táctica (`tactics.test.js`) y simulación (`simulation.test.js`: bots aleatorio, codicioso y mixto con todas las opciones de reglas; invariantes tras cada respuesta). `SIM_GAMES=2000 npm test` para más partidas.
 - Helpers en `tests/helpers.js`: `answer(session, 'texto de la opción')`, `until(session, 'texto del prompt', passive)`, `checkInvariants(g)`, `playOut(session, bot)`, `bySide({ french, british })`.

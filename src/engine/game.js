@@ -34,6 +34,7 @@ export const DEFAULT_SETUP = {
     //   cubes: { french: n, british: n }
     //   tactics: { french: [tactic ids], british: [...] }   in the players' zones
     //   market: [tactic ids]                               the row, left to right
+    //   marketDiscard: [tactic ids]                        the market's discard pile
     //   dice: [1..6, …]                                    results of the next dice rolled, in order
     scenario: {},
 };
@@ -134,6 +135,7 @@ function applyScenario(g, sc) {
         }
     }
     if (sc.market) g.market.row = sc.market.map((id) => ({ id: takeFrom(g.market.deck, id, 'tactic deck'), cubes: 0 }));
+    for (const id of sc.marketDiscard ?? []) g.market.discard.push(takeFrom(g.market.deck, id, 'tactic deck'));
     for (const [id, v] of Object.entries(sc.units ?? {})) Object.assign(g.units[id], v);
     Object.assign(g.locations, sc.locations ?? {});
     Object.assign(g.moore, sc.moore ?? {});
