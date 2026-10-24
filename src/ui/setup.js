@@ -23,6 +23,9 @@ const NUMERIC = new Set(['minDice', 'discardThreeTactics']);
 const select = (name, value, options) =>
     h('select', { name }, options.map(([v, label]) => h('option', { value: v, selected: String(v) === String(value) }, label)));
 
+/** The rulebook (rules.html, tools/build_rules_page.py), in a new tab. */
+export const rulesLink = (extra = '') => h(`a.button${extra}`, { href: 'rules.html', target: '_blank', rel: 'noopener', title: 'El reglamento v1.6c y las aclaraciones de la versión digital, en una pestaña nueva' }, '📖 Reglamento');
+
 const field = (label, control, hint) => h('label.field', null, h('span', null, label), control, hint && h('p.hint', null, hint));
 
 /**
@@ -115,7 +118,7 @@ export function renderSetup(root, { prefs, saved, onStart, onContinue, onLoadCod
             }, 'Cargar y repetir')),
         ),
         err,
-        h('div.actions', null, h('button.primary', { type: 'submit' }, 'Empezar la batalla'), h('button', { type: 'button', onclick: () => (seed.value = String(Math.floor(Math.random() * 1e6))) }, 'Semilla al azar')),
+        h('div.actions', null, h('button.primary', { type: 'submit' }, 'Empezar la batalla'), h('button', { type: 'button', onclick: () => (seed.value = String(Math.floor(Math.random() * 1e6))) }, 'Semilla al azar'), rulesLink()),
     );
     root.replaceChildren(h('div.setup', null, form));
 }

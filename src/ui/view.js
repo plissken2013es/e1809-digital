@@ -10,7 +10,7 @@ import {
 } from '../engine/index.js';
 import { createGreedyBot } from '../ai/greedyBot.js';
 import { createRandomBot } from '../ai/randomBot.js';
-import { BOT_SPEEDS } from './setup.js';
+import { BOT_SPEEDS, rulesLink } from './setup.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
 /** Replay of what happened in each answer (Session frames): ms per step; step: wait for "Siguiente"; off: no replay. */
@@ -472,6 +472,7 @@ export class GameView {
             sel('auto', AUTO, 'Preguntas rutinarias que se responden solas'),
             sel('dice', DICE, 'Lanzar los dados en 3D sobre el mapa'),
             h('button.small', { onclick: () => this.copyCode() }, 'Copiar código'),
+            rulesLink('.small'),
             h('button.small', { onclick: () => this.openDebug() }, 'Depuración'),
             h('button.small', { onclick: () => this.opts.onExit() }, 'Menú'),
         );

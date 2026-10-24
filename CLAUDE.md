@@ -41,6 +41,7 @@ Prototipo web de **Elviña 1809** (wargame de motor de cartas para 2 jugadores, 
 - `src/data/units.json`, `actions.json`, `board.json` y `tactics.json` están **curados a mano** (ver `src/data/README.md`). Los textos impresos se guardan tal cual en `text`; al lado va su lectura formal.
 - Los textos de `tactics.json` deben coincidir con `extracted/tactics_raw.json` (test); el coste de *Reorganización* es la única excepción ([D-36]).
 - Las posiciones de `board.json` están en píxeles del mapa a resolución completa (7016 × 4960).
+- **Reglamento web** (`rules.html`, botón «📖 Reglamento» en el menú y en la partida, pestaña nueva): lo genera `python -I tools/build_rules_page.py` a partir del PDF v1.6c y de las decisiones ✔ de docs/01 §14. **Regenerarlo cada vez que se confirme o cambie una decisión** (un test lo comprueba).
 
 ## Tests
 

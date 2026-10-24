@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { UNITS, COMMANDERS, ACTIONS, ACTION_BACKS, TACTICS, BOARD, LOCATIONS, unitsOf, deckOf, enemyOf } from '../src/engine/data.js';
 import tacticsJson from '../src/data/tactics.json' with { type: 'json' };
@@ -143,4 +143,12 @@ test('every image path exists', () => {
         'assets/icons/horse.webp',
     ];
     for (const p of paths) assert.ok(existsSync(ROOT + p), p);
+});
+
+test('rules.html lists every clarification confirmed in docs/01 (python -I tools/build_rules_page.py)', () => {
+    const doc = readFileSync(ROOT + 'docs/01-reglas-y-mecanicas.md', 'utf8');
+    const page = readFileSync(ROOT + 'rules.html', 'utf8');
+    const confirmed = [...doc.matchAll(/^\| (D-\d+) \|[^\n]*✔/gm)].map((m) => m[1]);
+    const listed = [...page.matchAll(/<tr><td>(D-\d+)<\/td>/g)].map((m) => m[1]);
+    assert.deepEqual(listed, confirmed);
 });
