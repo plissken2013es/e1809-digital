@@ -5,7 +5,7 @@ import { choose, log, beat } from './ask.js';
 import { shuffle } from './rng.js';
 import { ACTIONS, UNITS, LOCATIONS } from './data.js';
 import {
-    inPlay, availableOrders, freeSlots, gainCubes, payCubes, removeBlocks, eliminate, raiseMorale, unitName, SIDE_NAME,
+    inPlay, availableOrders, baseDice, freeSlots, gainCubes, payCubes, removeBlocks, eliminate, raiseMorale, unitName, SIDE_NAME,
 } from './state.js';
 import { loseMorale, testAfterLoss } from './morale.js';
 import { mooreMove, mooreDies } from './commanders.js';
@@ -106,7 +106,9 @@ export function* activation(g, side, cardId, { soult = false } = {}) {
     const orders = availableOrders(g, unitId);
     if (!orders.length) return;
 
-    const opts = orders.map((o, k) => ({ id: String(k), label: orderLabel(o), ref: o.target }));
+    // attacks show their dice: two orders may reach the same target with different dice (Hill: the Artillery)
+    const dice = (o) => (o.order.act === 'attack' ? ` · ${Math.max(g.rules.minDice, baseDice(g, unitId, o.order))} dados` : '');
+    const opts = orders.map((o, k) => ({ id: String(k), label: `${orderLabel(o)}${dice(o)}`, ref: o.target }));
     if (p.tactics.includes('a_sangre_y_fuego') && p.locked.a_sangre_y_fuego !== g.turnNo) {
         for (const o of orders) {
             if (o.order.act === 'attack' && LOCATIONS[o.target]) opts.push({ id: `blood:${o.target}`, label: `A sangre y fuego: tomar ${LOCATIONS[o.target].name} sin combate`, ref: o.target });
