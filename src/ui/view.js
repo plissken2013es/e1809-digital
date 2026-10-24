@@ -718,6 +718,12 @@ export class GameView {
                 onclick: () => this.zoomRef('moore'),
             }, h('img', { src: 'assets/icons/horse.webp', alt: '' }), h('b', null, g.moore.status === 'dying' ? '†' : g.moore.track)), 'moore'));
         }
+        // Soult does not move: his token, in the French rear, opens his card
+        items.push(this.hover(h(`div.soult${g.soult.used ? '.used' : ''}`, {
+            style: at(center(BOARD.soult)),
+            title: `Mariscal Soult · ${g.soult.used ? 'agotado' : 'disponible: doble activación o salvar de la desbandada (un uso)'}`,
+            onclick: () => this.zoomRef('soult'),
+        }, h('img', { src: 'assets/icons/horse.webp', alt: '' })), 'soult'));
         const note = p?.kind === 'moore_move' ? 'Elige en el mapa adónde cabalga Moore' : null;
         return h('div.map', { style: { backgroundImage: `url(${BOARD.image})` } }, items, note && h('div.map-note', null, note));
     }

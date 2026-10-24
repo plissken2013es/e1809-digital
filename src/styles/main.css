@@ -141,16 +141,22 @@ textarea { width: 100%; font: 12px/1.4 var(--mono); resize: vertical; }
 .map .ctrl { position: absolute; transform: translate(-50%, -50%); width: 2.2%; aspect-ratio: 1; border: 2px solid #000; border-radius: 3px; box-shadow: 0 2px 8px #000; }
 .map .ctrl.fr { background: #2f62b4; }
 .map .ctrl.gb { background: #c23a2a; }
-/* Moore: a red disc with the galloping horse of the Action cards and his Path of Sacrifice on top */
-.map .moore {
+/* Moore and Soult: discs with the galloping horse of the Action cards; Moore red, with his Path of Sacrifice on top */
+.map .moore, .map .soult {
     position: absolute; transform: translate(-50%, -50%); width: 4.2%; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center;
     background: radial-gradient(circle at 35% 30%, #d8453a, #8e1a12 70%); border: 2px solid #f1dfb8; box-shadow: 0 0 0 2px #3a0806, 0 3px 10px #000;
     container-type: inline-size; cursor: zoom-in;
 }
-.map .moore > * { grid-area: 1 / 1; }
-.map .moore img { width: 82%; opacity: .9; filter: drop-shadow(0 1px 1px #0008); }
-.map .moore b { position: relative; z-index: 1; font: 900 clamp(11px, 58cqw, 44px)/1 var(--serif); color: #ffd56b; -webkit-text-stroke: max(1px, 3cqw) #1a0503; paint-order: stroke fill; text-shadow: 0 1px 3px #000; }
+.map .moore > *, .map .soult > * { grid-area: 1 / 1; }
+.map .moore img, .map .soult img { width: 82%; opacity: .9; filter: drop-shadow(0 1px 1px #0008); }
+/* Moore's number at the top edge, the horse a little lower and smaller: the number no longer covers it */
+.map .moore img { width: 70%; transform: translateY(16%); }
+.map .moore b { position: relative; z-index: 1; align-self: start; margin-top: 3cqw; font: 900 clamp(8px, 36cqw, 28px)/1 var(--serif); color: #ffd56b; -webkit-text-stroke: max(1px, 3cqw) #1a0503; paint-order: stroke fill; text-shadow: 0 1px 3px #000; }
 .map .moore.dying { opacity: .55; }
+/* Soult: he does not move; his token, in the French rear, opens his card (greyed once his one use is spent) */
+.map .soult { background: radial-gradient(circle at 35% 30%, #4a78c4, #16295a 70%); box-shadow: 0 0 0 2px #0a1430, 0 3px 10px #000; }
+.map .soult img { transform: scaleX(-1); }
+.map .soult.used { opacity: .5; filter: grayscale(.8); }
 .map .moore-spot { position: absolute; transform: translate(-50%, -50%); width: 3.4%; aspect-ratio: 1; border-radius: 50%; }
 .map .option { outline: 3px solid var(--gold); outline-offset: 2px; cursor: pointer; box-shadow: 0 0 14px rgba(217, 169, 78, .8); animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { outline-color: #fff2c8; } }
