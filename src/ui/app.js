@@ -3,6 +3,7 @@
 import { Session, decodeRecord, replayRecord } from '../engine/index.js';
 import { renderSetup } from './setup.js';
 import { GameView } from './view.js';
+import { preloadAll } from './preload.js';
 
 const BUILD = '2026-10-24';
 const SAVE_KEY = 'e18-save';
@@ -82,4 +83,5 @@ function showSetup() {
     });
 }
 
-showSetup();
+// everything loads first (images, combat scenes, sounds, 3D dice), then the menu
+preloadAll(root).then(showSetup);

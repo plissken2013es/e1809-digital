@@ -39,3 +39,18 @@ function append(e, children) {
 }
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const images = new Map(); // url → Promise<HTMLImageElement>
+
+/** An image, loaded once and kept (the preload fills this; the combat scenes draw from it). */
+export function loadImage(url) {
+    if (!images.has(url)) {
+        images.set(url, new Promise((ok, ko) => {
+            const img = new Image();
+            img.onload = () => ok(img);
+            img.onerror = () => ko(new Error(`No se pudo cargar ${url}`));
+            img.src = url;
+        }));
+    }
+    return images.get(url);
+}

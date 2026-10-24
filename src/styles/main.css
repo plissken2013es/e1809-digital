@@ -26,6 +26,11 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 button, input, select, textarea { font: inherit; color: inherit; }
 img { display: block; max-width: 100%; }
 .loading { padding: 40px; text-align: center; color: var(--muted); }
+/* preload.js: everything loads before the menu */
+.preload { min-height: 70vh; display: grid; place-content: center; justify-items: center; gap: 12px; color: var(--muted); font: 12px var(--mono); }
+.preload .kicker { font: 700 22px var(--serif); color: var(--gold); margin: 0; }
+.preload-bar { width: min(320px, 70vw); height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.preload-bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .15s; }
 
 button {
     background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius);

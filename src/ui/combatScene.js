@@ -7,10 +7,13 @@
 // guns and its target does not answer (its dice ignore 1s and 2s). A place
 // that changes hands gets its own short scene next: the flag comes down and
 // the other goes up. Everything is drawn at 1× on a canvas scaled up with
-// pixelated rendering; a click or Enter skips it.
+// pixelated rendering; a click or Enter skips it. The sounds are W1815's too
+// (audio.js): a battle cry, muskets, guns, a shout when men run, and the cheer
+// of whoever takes a place.
 
-import { h } from './dom.js';
+import { h, loadImage } from './dom.js';
 import { UNITS, LOCATIONS } from '../engine/index.js';
+import { SFX, sfx, fadeAll } from './audio.js';
 
 const BASE = 'assets/combat/';
 const PW = 128; // a panel is one W1815 background
@@ -46,24 +49,24 @@ const SHEETS = {
 const COLOR = { french: 'blue', british: 'red' };
 const INFANTRY = ['walk', 'run', 'fire', 'crouch', 'crouching_fire', 'death_by_gunfire', 'death_by_cannon'];
 
+const FILES = {
+    ...Object.fromEntries(['blue', 'red'].flatMap((c) => INFANTRY.map((a) => [`${c}:${a}`, `${c}_infantry_${a}_sheet`]))),
+    gun: SHEETS.gun.file, gunDeath: SHEETS.gunDeath.file, smoke: SHEETS.smoke.file, blast: SHEETS.blast.file, horse: SHEETS.horse.file,
+    'flag:french': 'french_flag_sheet', 'flag:british': 'brit_flag_sheet', place: 'place_captured',
+    ...Object.fromEntries(Object.values(BG).map((n) => [`bg${n}`, `bg${n}`])),
+};
+/** Every image of the scenes (preload.js loads them before the menu). */
+export const COMBAT_IMAGES = Object.values(FILES).map((f) => `${BASE}${f}.png`);
+
 let images = null;
-/** Loads every image once; resolves to null if any is missing (no scenes then). */
+/** Every image by key; null if any is missing (no scenes then). */
 function load() {
-    const files = {
-        ...Object.fromEntries(['blue', 'red'].flatMap((c) => INFANTRY.map((a) => [`${c}:${a}`, `${c}_infantry_${a}_sheet`]))),
-        gun: SHEETS.gun.file, gunDeath: SHEETS.gunDeath.file, smoke: SHEETS.smoke.file, blast: SHEETS.blast.file, horse: SHEETS.horse.file,
-        'flag:french': 'french_flag_sheet', 'flag:british': 'brit_flag_sheet', place: 'place_captured',
-        ...Object.fromEntries(Object.values(BG).map((n) => [`bg${n}`, `bg${n}`])),
-    };
-    images ??= Promise.all(Object.entries(files).map(([key, file]) => new Promise((ok, ko) => {
-        const img = new Image();
-        img.onload = () => ok([key, img]);
-        img.onerror = ko;
-        img.src = `${BASE}${file}.png`;
-    }))).then(Object.fromEntries).catch((err) => {
-        console.warn('Sin escenas de combate:', err);
-        return null;
-    });
+    images ??= Promise.all(Object.entries(FILES).map(async ([key, file]) => [key, await loadImage(`${BASE}${file}.png`)]))
+        .then(Object.fromEntries)
+        .catch((err) => {
+            console.warn('Sin escenas de combate:', err);
+            return null;
+        });
     return images;
 }
 
@@ -118,10 +121,11 @@ function play(host, makeStage) {
     const done = new Promise((ok) => (finish = ok));
     let over = false;
     let el = null;
-    const handle = { done, skip: () => close(), at: () => {} };
-    const close = () => {
+    const handle = { done, skip: () => close(true), at: () => {} };
+    const close = (skipped = false) => {
         if (over) return;
         over = true;
+        fadeAll(skipped ? 0.15 : 0.8);
         el?.remove();
         finish();
     };
@@ -130,7 +134,7 @@ function play(host, makeStage) {
         if (!imgs) return close();
         const stage = makeStage(imgs);
         const canvas = h('canvas', { width: stage.w, height: stage.h });
-        el = h(`div.combat-scene${stage.cls ? `.${stage.cls}` : ''}`, { onclick: close, title: 'Pulsa para saltar' }, stage.head, canvas);
+        el = h(`div.combat-scene${stage.cls ? `.${stage.cls}` : ''}`, { onclick: () => close(true), title: 'Pulsa para saltar' }, stage.head, canvas);
         el.style.setProperty('--ratio', `${stage.w} / ${stage.h}`);
         host.append(el);
         const ctx = canvas.getContext('2d');
@@ -226,7 +230,8 @@ function combatStage(imgs, scene) {
     const head = h('div.cs-heads', null, ['french', 'british'].map((s) => h(`span.${s === 'french' ? 'fr' : 'gb'}`, null, label(s), s === scene.side ? ' ⚔' : '')));
 
     // what happens and when (each event once)
-    const events = [];
+    const events = [{ t: 0, run: () => sfx(SFX.cry, { volume: 0.8 }) }];
+    let shouted = false;
     for (const p of panels) {
         const enemy = enemyOf(p);
         for (const s of p.dying) events.push({ t: rnd(...T.deaths), run: (t) => die(p, s, t, enemy.artillery) });
@@ -248,8 +253,10 @@ function combatStage(imgs, scene) {
             const target = shuffle(enemy.sprites.filter((x) => !x.dead))[0];
             const [x, y] = target ? [target.x, target.y] : [rnd(30, 100), rnd(100, 150)];
             enemy.effects.push(new Sprite(x + rnd(-14, 14), y + 12).play(imgs.blast, SHEETS.blast, t + 280, null));
+            sfx(SFX.cannon, { throttle: ['cannon', 110], detune: true, volume: 0.7 });
             return;
         }
+        sfx(SFX.rifle, { throttle: ['rifle', 55], detune: true, volume: 0.5 });
         s.play(imgs[`${COLOR[p.side]}:${s.crouched ? 'crouching_fire' : 'fire'}`], s.crouched ? SHEETS.crouching_fire : SHEETS.fire, t);
         // smoke at the muzzle
         p.effects.push(new Sprite(s.x + (p.right ? -26 : 26), s.y - (s.crouched ? 16 : 24) + 8, { flip: p.right }).play(imgs.smoke, SHEETS.smoke, t + 120, null));
@@ -266,6 +273,8 @@ function combatStage(imgs, scene) {
     function flee(p, s, t) {
         if (s.dead) return;
         s.gone = true;
+        if (!shouted) sfx(SFX.flee, { volume: 0.8 });
+        shouted = true;
         s.play(imgs[`${COLOR[p.side]}:run`], SHEETS.run, t);
         s.flip = !p.right; // away from the enemy
         s.flight = { t, x: s.x, vx: p.right ? 0.075 : -0.075 }; // px per ms
@@ -340,6 +349,7 @@ function captureStage(imgs, location, by) {
     const wave = (t) => Math.floor((t / 1000) * SHEETS.flag.fps) % SHEETS.flag.n;
     const head = h('div.cs-heads.one', null, h(`span.${by === 'french' ? 'fr' : 'gb'}`, null, `¡${nameOf(location)} pasa a manos del ${by === 'french' ? 'francés' : 'británico'}!`));
     const ease = (k) => (k < 0 ? 0 : k > 1 ? 1 : k * k * (3 - 2 * k));
+    let cheered = false;
     return {
         w: place.width, h: place.height, head, ms: CAPTURE_MS, cls: 'capture',
         draw(ctx, t) {
@@ -347,6 +357,8 @@ function captureStage(imgs, location, by) {
             // the old flag comes down, the new one goes up (behind the palisade)
             const down = ease(t / 900);
             const up = ease((t - 1000) / 1100);
+            if (up > 0 && !cheered) sfx(by === 'french' ? SFX.cheerFrench : SFX.cheerBritish, { volume: 0.9 });
+            cheered ||= up > 0;
             const yOf = (k) => MAST.top + (MAST.hidden - MAST.top) * k;
             const { fw, fh } = SHEETS.flag;
             const draw = (side, y) => ctx.drawImage(imgs[`flag:${side}`], wave(t) * fw, 0, fw, fh, MAST.x, Math.round(y), fw, fh);

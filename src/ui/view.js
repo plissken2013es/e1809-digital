@@ -13,6 +13,7 @@ import { createRandomBot } from '../ai/randomBot.js';
 import { BOT_SPEEDS, rulesLink } from './setup.js';
 import { snapshot, animateBoard } from './anim.js';
 import { playCombat, playCapture } from './combatScene.js';
+import { setSound } from './audio.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
 /** Replay of what happened in each answer (Session frames): ms per step; step: wait for "Siguiente"; off: no replay. */
@@ -23,6 +24,7 @@ export const REPLAYS = [['normal', 'Repetición normal'], ['slow', 'Repetición 
 const DICE_RATE = { slow: 1, normal: 1.3, fast: 2.2, step: 1.3, off: 1.6 };
 export const DICE = [['on', 'Dados 3D'], ['off', 'Sin dados 3D']];
 export const SCENES = [['on', 'Escenas de combate'], ['off', 'Sin escenas']];
+export const SOUND = [['on', 'Sonido'], ['off', 'Sin sonido']];
 export const AUTO = [['useful', 'Saltar ventanas sin cartas'], ['minimal', 'Solo decisiones importantes'], ['all', 'Preguntar todo']];
 const [W, H] = BOARD.size;
 const SIDES = ['french', 'british'];
@@ -152,7 +154,9 @@ export class GameView {
             handoff: ui.handoff ?? true,
             dice: ui.dice === 'off' ? 'off' : 'on',
             scenes: ui.scenes === 'off' ? 'off' : 'on',
+            sound: ui.sound === 'off' ? 'off' : 'on', // the battle sounds of the combat scenes
         };
+        setSound(this.ui.sound === 'on');
         this.stage = null; // the combat scene on screen (combatScene.js), skipped like the dice
         this.tray = null; // the 3D dice (dice3d.js), loaded the first time they are needed
         this.diceHidden = null; // combat dice being thrown: '?' on screen until they land ('all' or a Set of indexes)
@@ -216,6 +220,7 @@ export class GameView {
 
     setUi(key, value) {
         this.ui[key] = value;
+        if (key === 'sound') setSound(value === 'on');
         this.opts.saveUi?.(this.ui);
         this.render();
     }
@@ -508,6 +513,7 @@ export class GameView {
             sel('auto', AUTO, 'Preguntas rutinarias que se responden solas'),
             sel('dice', DICE, 'Lanzar los dados en 3D sobre el mapa'),
             sel('scenes', SCENES, 'Escena animada de cada combate antes de mover las fichas'),
+            sel('sound', SOUND, 'Sonidos de batalla de las escenas de combate'),
             h('button.small', { onclick: () => this.copyCode() }, 'Copiar código'),
             rulesLink('.small'),
             h('button.small', { onclick: () => this.openDebug() }, 'Depuración'),
