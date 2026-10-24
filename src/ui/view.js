@@ -12,6 +12,7 @@ import { createGreedyBot } from '../ai/greedyBot.js';
 import { createRandomBot } from '../ai/randomBot.js';
 import { BOT_SPEEDS, rulesLink } from './setup.js';
 import { snapshot, animateBoard } from './anim.js';
+import { playCombat, playCapture } from './combatScene.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
 /** Replay of what happened in each answer (Session frames): ms per step; step: wait for "Siguiente"; off: no replay. */
@@ -21,6 +22,7 @@ export const REPLAYS = [['normal', 'Repetición normal'], ['slow', 'Repetición 
 /** Speed of the 3D dice for each replay speed (dice3d.js rate). */
 const DICE_RATE = { slow: 1, normal: 1.3, fast: 2.2, step: 1.3, off: 1.6 };
 export const DICE = [['on', 'Dados 3D'], ['off', 'Sin dados 3D']];
+export const SCENES = [['on', 'Escenas de combate'], ['off', 'Sin escenas']];
 export const AUTO = [['useful', 'Saltar ventanas sin cartas'], ['minimal', 'Solo decisiones importantes'], ['all', 'Preguntar todo']];
 const [W, H] = BOARD.size;
 const SIDES = ['french', 'british'];
@@ -149,7 +151,9 @@ export class GameView {
             auto: AUTO.some(([v]) => v === ui.auto) ? ui.auto : 'useful',
             handoff: ui.handoff ?? true,
             dice: ui.dice === 'off' ? 'off' : 'on',
+            scenes: ui.scenes === 'off' ? 'off' : 'on',
         };
+        this.stage = null; // the combat scene on screen (combatScene.js), skipped like the dice
         this.tray = null; // the 3D dice (dice3d.js), loaded the first time they are needed
         this.diceHidden = null; // combat dice being thrown: '?' on screen until they land ('all' or a Set of indexes)
         this.playback = null; // { frames, i, timer }: replay of the last answer
@@ -165,6 +169,11 @@ export class GameView {
         this.dialog = h('dialog');
         document.body.append(this.preview, this.dialog);
         this.onKey = (e) => {
+            if (this.stage && ['Enter', 'Escape', ' '].includes(e.key) && !e.target.closest('input, textarea, select')) {
+                e.preventDefault();
+                this.stage.skip();
+                return;
+            }
             if (this.playback?.rolling && ['Enter', 'Escape', ' '].includes(e.key) && !e.target.closest('input, textarea, select')) {
                 e.preventDefault();
                 this.tray?.then((t) => t?.skip());
@@ -244,10 +253,10 @@ export class GameView {
         this.selection.clear();
         this.opts.save(this.session, this.players);
         const frames = this.session.frames;
-        const withDice = this.ui.dice === 'on' ? frames.filter((f) => beatDice(f.beat).length) : [];
+        const shown = frames.filter((f) => (this.ui.dice === 'on' && beatDice(f.beat).length) || this.sceneOf(f.beat));
         if (this.error || !frames.length) this.render();
         else if (this.ui.replay !== 'off') this.startPlayback(frames, logStart);
-        else if (withDice.length) this.startPlayback(withDice, logStart, { diceOnly: true }); // only the throws
+        else if (shown.length) this.startPlayback(shown, logStart, { diceOnly: true }); // only the throws and the combat scenes
         else this.render();
     }
 
@@ -267,6 +276,12 @@ export class GameView {
     }
 
     // ------------------------------------------------------------ replay
+
+    /** The combat scene of a step (the results of a combat), if scenes are on. */
+    sceneOf(beat) {
+        const s = beat.kind === 'results' && this.ui.scenes === 'on' ? beat.scene : null;
+        return s && s.attacker.blocks > 0 ? s : null;
+    }
 
     /** diceOnly: no replay asked for, but the dice of these steps are thrown. */
     startPlayback(frames, logStart, { diceOnly = false } = {}) {
@@ -293,6 +308,18 @@ export class GameView {
             }
             if (this.playback !== pb) return; // skipped meanwhile
         }
+        // the combat scene, then a place changing hands: before the step moves the pieces
+        const scene = this.sceneOf(f.beat);
+        const map = this.root.querySelector('.map');
+        if (scene && map && pb.staged !== pb.i) {
+            pb.staged = pb.i;
+            for (const run of [() => playCombat(map, scene), ...scene.captured.map((c) => () => playCapture(map, c))]) {
+                this.stage = run();
+                await this.stage.done;
+                this.stage = null;
+                if (this.playback !== pb) return;
+            }
+        }
         this.render();
         const ms = pb.diceOnly ? 150 : REPLAY_MS[this.ui.replay];
         if (ms) pb.timer = setTimeout(() => this.nextStep(), ms);
@@ -302,6 +329,7 @@ export class GameView {
         const pb = this.playback;
         if (!pb) return;
         if (pb.rolling) return void this.tray?.then((t) => t?.skip());
+        if (this.stage) return void this.stage.skip();
         if (pb.i + 1 >= pb.frames.length) return this.endPlayback();
         pb.i++;
         this.showStep();
@@ -313,6 +341,7 @@ export class GameView {
         clearTimeout(pb.timer);
         if (pb.rolling) this.tray?.then((t) => t?.skip());
         this.playback = null;
+        this.stage?.skip();
     }
 
     /** Throws the dice over the map (or the whole window if the map is out of sight). False without WebGL. */
@@ -478,6 +507,7 @@ export class GameView {
             sel('replay', REPLAYS, 'Cómo se repite lo que pasa en cada decisión'),
             sel('auto', AUTO, 'Preguntas rutinarias que se responden solas'),
             sel('dice', DICE, 'Lanzar los dados en 3D sobre el mapa'),
+            sel('scenes', SCENES, 'Escena animada de cada combate antes de mover las fichas'),
             h('button.small', { onclick: () => this.copyCode() }, 'Copiar código'),
             rulesLink('.small'),
             h('button.small', { onclick: () => this.openDebug() }, 'Depuración'),

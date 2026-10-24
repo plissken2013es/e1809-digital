@@ -295,3 +295,21 @@ dialog::backdrop { background: #000a; }
 .pill .delta { position: absolute; z-index: 5; right: 6px; top: calc(100% + 3px); font: 800 11px/1 var(--mono); padding: 1px 4px; border-radius: 3px; background: #000; pointer-events: none; }
 .pill .delta.good { color: #7fe0a6; }
 .pill .delta.bad { color: #ff8a80; }
+
+/* ------------------------------------------------------------ combat scenes (combatScene.js) */
+
+.combat-scene {
+    position: absolute; z-index: 6; top: 2%; left: 50%; transform: translateX(-50%); width: min(46%, 620px);
+    display: grid; gap: 4px; padding: 5px; border-radius: 6px; background: rgba(10, 12, 16, .92);
+    border: 2px solid var(--gold); box-shadow: 0 6px 24px #000c; cursor: pointer; animation: cs-in .25s ease-out;
+    transition: opacity .28s;
+}
+.combat-scene.capture { width: min(24%, 330px); }
+.combat-scene.out { opacity: 0; }
+.combat-scene canvas { display: block; width: 100%; aspect-ratio: var(--ratio); image-rendering: pixelated; border-radius: 3px; }
+.cs-heads { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font: 700 11px/1.2 var(--mono); text-align: center; }
+.cs-heads.one { grid-template-columns: 1fr; }
+.cs-heads .fr { color: #9fc0f5; }
+.cs-heads .gb { color: #f5a99f; }
+@keyframes cs-in { from { opacity: 0; transform: translate(-50%, -10px); } }
+@media (max-width: 760px) { .combat-scene { width: 92%; } .combat-scene.capture { width: 60%; } }

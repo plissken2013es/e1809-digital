@@ -23,4 +23,4 @@ y abrir http://localhost:8012. Tests: `npm test` (Node 22).
 - [`docs/01-reglas-y-mecanicas.md`](docs/01-reglas-y-mecanicas.md): las reglas formalizadas y las decisiones `[D-n]` tomadas para la versión digital.
 - [`docs/02-plan-tecnico.md`](docs/02-plan-tecnico.md): arquitectura, herramientas y hoja de ruta.
 
-El arte, las cartas y el reglamento son del material del diseñador del juego; el código usa three.js y cannon-es (MIT, en `vendor/`) para los dados 3D.
+El arte, las cartas y el reglamento son del material del diseñador del juego; las escenas de combate usan pixel-art propio del autor del prototipo (de su versión digital de W1815); el código usa three.js y cannon-es (MIT, en `vendor/`) para los dados 3D.

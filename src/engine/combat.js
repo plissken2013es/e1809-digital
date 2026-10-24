@@ -76,6 +76,7 @@ export function* attack(g, unitId, order, target) {
             { id: 'die', label: '+1 dado' },
             { id: 'reroll', label: 'Un relanzamiento gratuito' },
         ], { kind: 'moore_support' });
+        c.moore = true;
         if (a === 'die') c.extraDice++;
         else c.mooreReroll = true;
     }
@@ -219,6 +220,7 @@ function* applyResults(g) {
     c.sixPairs = r.sixPairs;
     c.defenderMoraleLost = r.defenderMorale;
     const attackerIn = inPlay(g, c.attacker);
+    const locationsBefore = { ...g.locations };
     log(g, `Resultado: ${describe(r)}.`, 'phase');
     if (r.cubes && attackerIn) gainCubes(g, c.side, r.cubes, 'treses');
 
@@ -260,7 +262,7 @@ function* applyResults(g) {
         casualties(c.attacker, r.attackerCasualties);
         morale(c.attacker, r.attackerMorale);
     }
-    yield* beat(g, 'results', { results: r });
+    yield* beat(g, 'results', { results: r, scene: sceneOf(g, c, locationsBefore) });
 
     const lost = Object.keys(c.lostBlocks).filter((u) => c.lostBlocks[u] > 0 && inPlay(g, u));
     if (lost.length) yield* tacticWindow(g, 'casualties', { lost });
@@ -268,6 +270,21 @@ function* applyResults(g) {
     for (const u of [...c.defenders, c.attacker]) {
         if (before[u] !== undefined) yield* testAfterLoss(g, u, before[u]);
     }
+}
+
+/**
+ * What the combat scene of the view shows (ui/combatScene.js): who fought, the pieces each
+ * had before this result, what each lost, Moore's support and the places that changed hands.
+ */
+function sceneOf(g, c, locationsBefore) {
+    const unit = (id) => {
+        const hit = c.hits[id] ?? { casualties: 0, morale: 0 };
+        return { id, blocks: g.units[id].blocks + hit.casualties, lost: hit.casualties, morale: hit.morale };
+    };
+    return {
+        side: c.side, attacker: unit(c.attacker), defenders: c.defenders.map(unit), location: c.location, moore: Boolean(c.moore),
+        captured: Object.keys(g.locations).filter((l) => g.locations[l] !== locationsBefore[l]).map((l) => ({ location: l, by: g.locations[l] })),
+    };
 }
 
 /** The owner spreads the losses of a location among its defenders [§4.2]. */
