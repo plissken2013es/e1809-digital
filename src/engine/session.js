@@ -122,22 +122,33 @@ const toB64url = (bytes) => {
 
 const fromB64url = (text) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
 
-export async function encodeRecord(record) {
-    const json = new TextEncoder().encode(JSON.stringify(record));
-    return PREFIX + toB64url(await pipe(json, new CompressionStream('deflate-raw')));
+/** Any JSON as a short text code: `prefix` + base64url(deflate-raw). Also the live invitations (ui/live.js). */
+export async function packCode(prefix, value) {
+    const json = new TextEncoder().encode(JSON.stringify(value));
+    return prefix + toB64url(await pipe(json, new CompressionStream('deflate-raw')));
 }
 
-/** Accepts the code with spaces or line breaks in between. */
-export async function decodeRecord(code) {
+/** The JSON of a code made by packCode; accepts spaces or line breaks in between. */
+export async function unpackCode(prefix, code) {
     const t = code.replace(/\s+/g, '');
-    const i = t.indexOf(PREFIX);
-    if (i < 0) throw new Error(`not a game record (it must start with ${PREFIX})`);
-    let record;
+    const i = t.indexOf(prefix);
+    if (i < 0) throw new Error(`it must start with ${prefix}`);
     try {
-        const bytes = await pipe(fromB64url(t.slice(i + PREFIX.length)), new DecompressionStream('deflate-raw'));
-        record = JSON.parse(new TextDecoder().decode(bytes));
+        const bytes = await pipe(fromB64url(t.slice(i + prefix.length)), new DecompressionStream('deflate-raw'));
+        return JSON.parse(new TextDecoder().decode(bytes));
     } catch {
         throw new Error('the text is incomplete or damaged (was it copied whole?)');
+    }
+}
+
+export const encodeRecord = (record) => packCode(PREFIX, record);
+
+export async function decodeRecord(code) {
+    let record;
+    try {
+        record = await unpackCode(PREFIX, code);
+    } catch (err) {
+        throw new Error(err.message.startsWith('it must') ? `not a game record (it must start with ${PREFIX})` : err.message);
     }
     if (record.v !== 1 || !record.setup || !Array.isArray(record.answers)) throw new Error('unknown record format');
     return record;

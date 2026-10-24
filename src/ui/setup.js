@@ -5,7 +5,7 @@
 import { h } from './dom.js';
 import { DEFAULT_SETUP, DEFAULT_RULES } from '../engine/index.js';
 
-export const PLAYERS = [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio'], ['mail', 'Rival por correspondencia']];
+export const PLAYERS = [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio'], ['mail', 'Rival por correspondencia'], ['live', 'Rival en directo']];
 export const BOT_SPEEDS = [['fast', 'Rápida'], ['normal', 'Normal'], ['slow', 'Lenta'], ['step', 'Paso a paso (botón)']];
 
 /** Rules options of docs/01 §12: [key, label, [[value, text], …]]. The first value is the default. */
@@ -64,9 +64,9 @@ export function renderSetup(root, { prefs, saved, mail = [], onStart, onContinue
                 }
                 const setup = { seed: f.get('seed') || String(Date.now() % 100000), rules: r, scenario: scenarioJson };
                 const who = { french: f.get('french'), british: f.get('british') };
-                const remote = Object.values(who).filter((k) => k === 'mail').length;
+                const remote = Object.values(who).filter((k) => k === 'mail' || k === 'live').length;
                 if (remote && (remote > 1 || !Object.values(who).includes('human'))) {
-                    err.textContent = 'Por correspondencia: un bando es «Humano» (tú) y el otro «Rival por correspondencia».';
+                    err.textContent = 'Contra un rival a distancia: un bando es «Humano» (tú) y el otro «Rival por correspondencia» o «Rival en directo».';
                     return;
                 }
                 if (!remote && !replaceSaved()) return; // a correspondence game is kept apart
@@ -90,16 +90,16 @@ export function renderSetup(root, { prefs, saved, mail = [], onStart, onContinue
         saved && h('p', null, h('button.primary', { type: 'button', onclick: onContinue }, `Continuar la partida guardada (${savedText})`)),
         mail.length > 0 && h(
             'div.mail-list', null,
-            h('p.kicker', null, 'Partidas por correspondencia'),
+            h('p.kicker', null, 'Partidas a distancia'),
             mail.map((m) => h('p', null,
-                h('button', { type: 'button', onclick: () => onMail(m.id) }, `Continuar: llevas el ${m.side === 'french' ? 'francés' : 'británico'} · ronda ${m.round} · ${m.answers} decisi${m.answers === 1 ? 'ón' : 'ones'}`),
+                h('button', { type: 'button', onclick: () => onMail(m.id) }, `Continuar ${m.kind === 'live' ? 'en directo' : 'por correspondencia'}: llevas el ${m.side === 'french' ? 'francés' : 'británico'} · ronda ${m.round} · ${m.answers} decisi${m.answers === 1 ? 'ón' : 'ones'}`),
                 ' ',
                 h('button.ghost.small', { type: 'button', title: 'Borrar esta partida de este navegador', onclick: () => confirm('¿Olvidar esta partida en este navegador? Si el rival te vuelve a enviar su enlace, se recupera.') && onForgetMail(m.id) }, 'Olvidar'))),
         ),
         h(
             'div.setup-grid', null,
             field('Francés (Soult)', select('french', players.french, PLAYERS)),
-            field('Británico (Moore)', select('british', players.british, PLAYERS), 'Por correspondencia: tú eres «Humano»; cada vez que le toque al rival, le envías un enlace (WhatsApp, correo…) y él te devuelve otro.'),
+            field('Británico (Moore)', select('british', players.british, PLAYERS), 'Contra un rival a distancia, tú eres «Humano». Por correspondencia: cada vez que le toque, le envías un enlace (WhatsApp, correo…) y te devuelve otro. En directo: le envías una invitación, te devuelve un código y jugáis a la vez.'),
             field('Velocidad de los bots', select('speed', p.speed ?? 'normal', BOT_SPEEDS), 'También en la barra superior.'),
             field('Semilla', seed, 'Misma semilla + mismas decisiones = misma partida.'),
         ),

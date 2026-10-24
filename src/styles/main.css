@@ -86,6 +86,12 @@ textarea { width: 100%; font: 12px/1.4 var(--mono); resize: vertical; }
 .pill.gb { border-color: var(--gb); background: var(--gb-dim); color: #fbe0db; }
 .pill.gold { color: var(--gold); border-color: #5a4521; }
 .pill.mail { color: var(--gold); border-color: var(--gold); }
+.pill.mail.off { color: var(--muted); border-color: var(--line); }
+/* live: invite, reply, connect */
+.decision .live { display: grid; gap: 8px; padding: 8px; border: 1px dashed var(--gold); border-radius: 6px; }
+.decision .live p { margin: 0; }
+.decision .live .code { width: 100%; font: 11px/1.3 var(--mono); }
+.who.live { color: var(--gold); }
 /* correspondence: the game travels as a link */
 .decision .mail { display: grid; gap: 8px; }
 .decision .mail p { margin: 0; }

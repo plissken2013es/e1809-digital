@@ -1,10 +1,11 @@
 // Entry point: setup screen, saved game and the game view.
 
-import { Session, decodeRecord, replayRecord, enemyOf } from '../engine/index.js';
+import { Session, decodeRecord, replayRecord, enemyOf, makeRecord, packCode, unpackCode } from '../engine/index.js';
 import { renderSetup } from './setup.js';
 import { GameView } from './view.js';
 import { preloadAll } from './preload.js';
-import { receive } from './mail.js';
+import { receive, isPrefix } from './mail.js';
+import { LiveLink, LiveSync, INVITE, REPLY } from './live.js';
 
 const BUILD = '2026-10-24';
 const SAVE_KEY = 'e18-save';
@@ -49,13 +50,71 @@ function save(session, players) {
     store.set(MAIL_KEY, all);
 }
 
-/** Who plays what in a correspondence game: this browser one side, the rival the other. */
-const mailPlayers = (side) => ({ [side]: 'human', [enemyOf(side)]: 'mail' });
+/** Who plays what against a rival at a distance: this browser one side, the rival (by correspondence or live) the other. */
+const mailPlayers = (side, kind = 'mail') => ({ [side]: 'human', [enemyOf(side)]: kind });
 
-function rememberSide(id, side) {
+function rememberSide(id, side, kind = 'mail') {
     const all = store.get(MAIL_KEY) ?? {};
-    all[id] = { ...all[id], side };
+    all[id] = { ...all[id], side, kind };
     store.set(MAIL_KEY, all);
+}
+
+/** The connection of the live game on screen (live.js). It outlives the view, which is rebuilt when the copies resync. */
+let live = null;
+
+function liveFor(session, side) {
+    const id = session.setup.match;
+    if (live?.id === id) return live;
+    live?.link.close(true);
+    const c = { id, side, inviteLink: null, replyCode: null };
+    c.link = new LiveLink({
+        onMessage: (msg) => c.sync.message(msg),
+        onState: (state) => {
+            if (state === 'open') {
+                c.inviteLink = null;
+                c.replyCode = null;
+                c.sync.hello();
+            }
+            view?.liveChanged(state);
+        },
+    });
+    c.sync = new LiveSync({
+        inviter: false,
+        answers: () => view?.session.answers ?? [],
+        adopt(list) {
+            if (isPrefix(view.session.answers, list)) return view.receive(list.slice(view.session.answers.length));
+            // the copies parted: the game is rebuilt from the one that wins
+            const s = new Session(view.session.setup, list);
+            save(s, mailPlayers(side, 'live'));
+            play(s, mailPlayers(side, 'live'), store.get(PREFS_KEY)?.ui, 'La partida se ha igualado con la de tu rival.');
+        },
+        send: (msg) => c.link.send(msg),
+    });
+    c.invite = async () => {
+        c.sync.inviter = true;
+        const sdp = await c.link.invite();
+        const code = await packCode(INVITE, { sdp, side, record: makeRecord(view.session, BUILD) });
+        c.inviteLink = `${location.origin}${location.pathname}#${code}`;
+        view?.render();
+    };
+    c.reply = async (offer) => {
+        c.sync.inviter = false;
+        const sdp = await c.link.reply(offer);
+        c.replyCode = await packCode(REPLY, { sdp });
+        view?.render();
+    };
+    c.complete = async (text) => {
+        const { sdp } = await unpackCode(REPLY, text);
+        await c.link.complete(sdp);
+    };
+    c.local = (n, a) => c.sync.local(n, a);
+    live = c;
+    return c;
+}
+
+function closeLive() {
+    live?.link.close(true);
+    live = null;
 }
 
 /**
@@ -73,6 +132,15 @@ async function openLink(code) {
         return;
     }
     const mine = (store.get(MAIL_KEY) ?? {})[id];
+    const { session, replay, notice } = arrive(record, mine, received, failedAt, error);
+    const side = mine?.side ?? session.state.pending?.side ?? 'british';
+    rememberSide(id, side, mine?.kind ?? 'mail');
+    save(session, mailPlayers(side, mine?.kind));
+    play(session, mailPlayers(side, mine?.kind), prefs.ui, notice, replay);
+}
+
+/** A received game against this browser's copy: the session to go on with and the rival's moves to replay. */
+function arrive(record, mine, received, failedAt, error) {
     const got = receive(mine?.answers ?? null, record.answers);
     const fresh = got.answers.length - (mine?.answers.length ?? 0);
     let session = received;
@@ -95,17 +163,30 @@ async function openLink(code) {
             replay.frames.push(...session.frames);
         }
     }
-    const side = mine?.side ?? session.state.pending?.side ?? 'british';
-    rememberSide(id, side);
-    save(session, mailPlayers(side));
-    play(session, mailPlayers(side), prefs.ui, notice, replay);
+    return { session, replay, notice };
+}
+
+/** A live invitation (…#E18L.…): the game in the other side, and the reply code to send back. */
+async function openInvite(code) {
+    history.replaceState(null, '', location.pathname + location.search);
+    const invite = await unpackCode(INVITE, code);
+    const record = invite.record;
+    const id = record.setup.match;
+    const side = enemyOf(invite.side);
+    const mine = (store.get(MAIL_KEY) ?? {})[id];
+    const { session: received, failedAt, error } = replayRecord(record);
+    const { session, replay } = arrive(record, mine, received, failedAt, error);
+    rememberSide(id, side, 'live');
+    save(session, mailPlayers(side, 'live'));
+    play(session, mailPlayers(side, 'live'), (store.get(PREFS_KEY) ?? {}).ui, 'Invitación recibida: envía a tu rival el código de respuesta.', replay);
+    await live.reply(invite.sdp);
 }
 
 function continueMail(id) {
     const m = (store.get(MAIL_KEY) ?? {})[id];
     const prefs = store.get(PREFS_KEY) ?? {};
     const { session, failedAt } = replayRecord({ setup: m.setup, answers: m.answers });
-    play(session, mailPlayers(m.side), prefs.ui, failedAt != null ? `El juego ha cambiado: la partida se para en la decisión ${failedAt + 1}.` : null);
+    play(session, mailPlayers(m.side, m.kind), prefs.ui, failedAt != null ? `El juego ha cambiado: la partida se para en la decisión ${failedAt + 1}.` : null);
 }
 
 function forgetMail(id) {
@@ -118,8 +199,11 @@ function forgetMail(id) {
 /** ui: { speed, replay, auto, handoff } (view.js), kept in the preferences. replay: steps to show first. */
 function play(session, players, ui, notice, replay = null) {
     view?.dispose();
+    const remote = Object.keys(players).find((s) => players[s] === 'live');
+    const conn = remote ? liveFor(session, enemyOf(remote)) : null;
+    if (!conn) closeLive();
     view = new GameView(root, session, {
-        build: BUILD, players, ui, notice, replay, onExit: showSetup,
+        build: BUILD, players, ui, notice, replay, live: conn, onExit: showSetup,
         save: (s, who) => save(s, who),
         saveUi: (u) => store.set(PREFS_KEY, { ...store.get(PREFS_KEY), ui: u, speed: u.speed }),
     });
@@ -129,12 +213,13 @@ function play(session, players, ui, notice, replay = null) {
 function showSetup() {
     view?.dispose();
     view = null;
+    closeLive();
     const saved = store.get(SAVE_KEY);
     const prefs = store.get(PREFS_KEY) ?? {};
     const mail = Object.entries(store.get(MAIL_KEY) ?? {})
         .filter(([, m]) => m.setup && m.side)
         .sort(([, a], [, b]) => b.updated - a.updated)
-        .map(([id, m]) => ({ id, side: m.side, round: m.round, answers: m.answers.length }));
+        .map(([id, m]) => ({ id, side: m.side, kind: m.kind, round: m.round, answers: m.answers.length }));
     renderSetup(root, {
         prefs,
         saved: saved && { round: saved.round, answers: saved.answers.length },
@@ -144,10 +229,10 @@ function showSetup() {
         onStart(setup, players, speed) {
             const ui = { ...prefs.ui, speed };
             store.set(PREFS_KEY, { ...prefs, setup, players, speed, ui });
-            const remote = Object.keys(players).find((s) => players[s] === 'mail');
+            const remote = Object.keys(players).find((s) => players[s] === 'mail' || players[s] === 'live');
             // a correspondence game: an id for its links (getRandomValues: randomUUID needs https), this browser plays the other side
             const s = new Session(remote ? { ...setup, match: [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('') } : setup);
-            if (remote) rememberSide(s.setup.match, enemyOf(remote));
+            if (remote) rememberSide(s.setup.match, enemyOf(remote), players[remote]);
             save(s, players);
             play(s, players, ui);
         },
@@ -173,8 +258,8 @@ function showSetup() {
     });
 }
 
-const linked = () => location.hash.startsWith('#E18.') && decodeURIComponent(location.hash.slice(1));
-const follow = (code) => openLink(code).catch((err) => {
+const linked = () => /^#E18L?\./.test(location.hash) && decodeURIComponent(location.hash.slice(1));
+const follow = (code) => (code.startsWith(INVITE) ? openInvite(code) : openLink(code)).catch((err) => {
     showSetup();
     alert(`No se pudo abrir el enlace de la partida: ${err.message}`);
 });

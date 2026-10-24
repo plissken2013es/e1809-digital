@@ -173,8 +173,11 @@ export class GameView {
         this.timer = null;
         this.makeBots();
         /** Correspondence: the rival's side (it decides elsewhere) and what can no longer be undone (received or sent). */
-        this.mail = SIDES.find((s) => this.players[s] === 'mail') ?? null;
+        this.mail = SIDES.find((s) => this.isRemote(s)) ?? null;
         this.mailFloor = session.answers.length;
+        /** Live (app.js liveFor): the connection, and the rival's answers waiting for the replay of the previous one. */
+        this.live = opts.live ?? null;
+        this.inbox = [];
         this.preview = h('div.preview');
         this.dialog = h('dialog');
         document.body.append(this.preview, this.dialog);
@@ -208,7 +211,7 @@ export class GameView {
     makeBots() {
         const seed = `${this.session.setup.seed}-${this.session.answers.length}`;
         const make = (kind, side) => kind === 'greedy' ? createGreedyBot(`${seed}-${side}`, () => this.session.state) : createRandomBot(`${seed}-${side}`);
-        this.bots = Object.fromEntries(SIDES.map((s) => [s, ['human', 'mail'].includes(this.players[s]) ? null : make(this.players[s], s)]));
+        this.bots = Object.fromEntries(SIDES.map((s) => [s, this.players[s] === 'human' || this.isRemote(s) ? null : make(this.players[s], s)]));
     }
 
     dispose() {
@@ -241,14 +244,37 @@ export class GameView {
         return Boolean(this.bots[side]);
     }
 
-    /** The rival by correspondence: he answers in his own browser. */
+    /** The rival at a distance (by correspondence or live): he answers in his own browser. */
     isRemote(side) {
-        return this.players[side] === 'mail';
+        return this.players[side] === 'mail' || this.players[side] === 'live';
     }
 
-    /** Undo stops at the last decision received or sent by correspondence. */
+    /** Live and connected: each answer travels at once. */
+    get online() {
+        return this.live?.link.state === 'open';
+    }
+
+    /** Undo stops at the last decision received or sent by correspondence; live, every answer has gone at once. */
     canUndo() {
+        if (this.live) return false;
         return this.session.canUndo && (!this.mail || this.session.answers.length > this.mailFloor);
+    }
+
+    /** Live: the rival's answers, played one after another as their replays end. */
+    receive(answers) {
+        this.inbox.push(...answers);
+        this.deliver();
+    }
+
+    deliver() {
+        if (this.playback || this.stage || !this.inbox.length) return;
+        this.act(this.inbox.shift(), { remote: true });
+    }
+
+    liveChanged(state) {
+        const say = { open: 'Conectados en directo: cada jugada llega al momento.', failed: 'No se pudo conectar. Podéis volver a intentarlo o seguir por enlaces.', closed: 'Se ha cortado la conexión en directo. Podéis volver a conectar o seguir por enlaces.' }[state];
+        if (say) this.toast(say);
+        if (!this.playback) this.render();
     }
 
     /** Whose hand is face up: the humans' (only the one deciding when both are human); all with "show hands". */
@@ -262,21 +288,26 @@ export class GameView {
 
     // ------------------------------------------------------------ actions
 
-    /** auto: an answer given by autoAnswer, which does not start a new summary. */
-    act(answer, { auto = false } = {}) {
+    /** auto: an answer given by autoAnswer, which does not start a new summary. remote: the live rival's. */
+    act(answer, { auto = false, remote = false } = {}) {
         clearTimeout(this.timer);
         this.stopPlayback();
         const p = this.session.state.pending;
         const logStart = this.session.state.log.length;
+        const n = this.session.answers.length;
         try {
             this.session.act(answer, { capture: true }); // the snapshots carry the dice of each roll too
             this.error = null;
+            if (!remote) this.live?.local(n, answer); // live: it goes to the rival at once
         } catch (err) {
-            if (err instanceof IllegalAction) return this.toast(err.message);
+            if (err instanceof IllegalAction) {
+                if (remote) return void this.live?.sync.hello(); // it does not fit: the copies resync
+                return this.toast(err.message);
+            }
             this.error = err;
             console.error(err);
         }
-        if (p && !this.isBot(p.side) && !auto) this.mark = logStart;
+        if (p && !this.isBot(p.side) && !auto && !remote) this.mark = logStart;
         this.selection.clear();
         this.opts.save(this.session, this.players);
         this.playFrames(this.session.frames, logStart);
@@ -299,8 +330,9 @@ export class GameView {
     autoAnswer(p) {
         if (!p || this.isBot(p.side)) return null;
         const empty = emptyWindow(p);
-        // the rival by correspondence: his windows without cards pass by themselves, so only real decisions travel
-        if (this.isRemote(p.side)) return empty ? 'pass' : null;
+        // the rival at a distance: his windows without cards pass by themselves, so only real decisions travel
+        // (live and connected he answers them himself, so that the two copies never answer the same question)
+        if (this.isRemote(p.side)) return empty && !this.online ? 'pass' : null;
         if (this.ui.auto === 'all') return null;
         if (empty) return 'pass';
         if (this.ui.auto === 'minimal') {
@@ -434,6 +466,7 @@ export class GameView {
     scheduleNext() {
         clearTimeout(this.timer);
         if (this.playback) return;
+        if (this.inbox.length) return void this.deliver();
         const p = this.session.state.pending;
         if (!p || this.session.over || this.error) return;
         const auto = this.autoAnswer(p);
@@ -540,7 +573,8 @@ export class GameView {
             h('span.pill.gold', { title: 'Reserva común de cubos de Inercia' }, `Reserva ${g.supply ?? '∞'}`),
             h('span.pill', { title: 'Divisiones eliminadas (2 = derrota)' }, `Bajas de División: FR ${eliminatedOf(g, 'french').length} · GB ${eliminatedOf(g, 'british').length}`),
             h('span.spacer'),
-            this.mail && h('span.pill.mail', { title: 'Cada vez que le toque al rival, envíale el enlace de la partida' }, `Por correspondencia · llevas el ${SIDE_NAME[enemyOf(this.mail)]}`),
+            this.mail && h(`span.pill.mail${this.live && !this.online ? '.off' : ''}`, { title: this.live ? 'Partida en directo: cada jugada llega al momento mientras estéis conectados' : 'Cada vez que le toque al rival, envíale el enlace de la partida' },
+                `${this.live ? `En directo · ${this.online ? 'conectado' : 'sin conexión'}` : 'Por correspondencia'} · llevas el ${SIDE_NAME[enemyOf(this.mail)]}`),
             h('button.small', { onclick: () => this.undo(), disabled: !this.canUndo(), title: 'Ctrl+Z' }, '↶ Deshacer'),
             botsExist && h('button.small', {
                 onclick: () => {
@@ -757,8 +791,10 @@ export class GameView {
         }
         if (g.combat) out.push(this.combatBox());
         if (p && !this.session.over && !this.isBot(p.side)) out.push(this.summary());
+        if (this.live && !this.online && !this.session.over) out.unshift(this.livePanel());
         if (p && !this.session.over && this.isRemote(p.side)) {
-            out.push(this.mailPanel(false));
+            if (this.online) out.push(h('div.mail', null, h(`span.who.${CODE[this.mail]}`, null, `Le toca al ${SIDE_NAME[this.mail]}`), h('p.bot-wait', null, 'Esperando su jugada: llegará al momento.')));
+            else out.push(this.mailPanel(false));
             return h('section.decision', { 'aria-live': 'polite' }, out);
         }
         if (p && !this.session.over) {
@@ -814,6 +850,41 @@ export class GameView {
                 h('button', { onclick: () => this.shareLink('mail') }, 'Enviar por correo')),
             h('p.hint', null, 'Cuando te devuelva su enlace, ábrelo en este navegador y la partida seguirá donde la dejasteis. Lo enviado ya no se puede deshacer.'),
         );
+    }
+
+    /** Live and not connected: invite the rival, paste his reply, or send him yours. */
+    livePanel() {
+        const c = this.live;
+        const state = c.link.state;
+        const copy = async (text, what) => {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.toast(`${what} copiado.`);
+            } catch {
+                this.openDialog(what, h('textarea', { rows: 6, readonly: true }, text));
+            }
+        };
+        const out = [h('span.who.live', null, 'Jugar en directo')];
+        if (c.replyCode) {
+            out.push(h('p', null, 'Envía este código de respuesta a tu rival (WhatsApp, correo…). Cuando lo pegue en su partida, os conectaréis.'),
+                h('textarea.code', { rows: 3, readonly: true, onclick: (e) => e.target.select() }, c.replyCode),
+                h('div.opts', null, h('button.primary', { onclick: () => copy(c.replyCode, 'Código de respuesta') }, 'Copiar código de respuesta')));
+        } else if (c.inviteLink) {
+            const box = h('textarea.code', { rows: 3, placeholder: 'Pega aquí el código de respuesta de tu rival (E18R.…)' });
+            out.push(h('p', null, '1. Envía la invitación a tu rival. 2. Él te devolverá un código de respuesta: pégalo aquí. No cierres esta pestaña mientras tanto.'),
+                h('div.opts', null,
+                    navigator.share && h('button', { onclick: () => navigator.share({ title: 'Elviña 1809', text: 'Te invito a una partida de Elviña 1809 en directo.', url: c.inviteLink }).catch(() => {}) }, 'Compartir invitación…'),
+                    h('button', { onclick: () => copy(c.inviteLink, 'Enlace de invitación') }, 'Copiar invitación')),
+                box,
+                h('div.opts', null, h('button.primary', {
+                    onclick: () => c.complete(box.value).catch((err) => this.toast(`Ese código no sirve: ${err.message}`)),
+                }, 'Conectar')));
+        } else {
+            out.push(h('p', null, state === 'failed' ? 'No se pudo conectar. Vuelve a invitar a tu rival, o seguid por enlaces.' : state === 'closed' ? 'Se cortó la conexión. Vuelve a invitar a tu rival para seguir en directo, o seguid por enlaces.' : 'Invita a tu rival: os conectáis una vez y cada jugada llega al momento.'),
+                h('div.opts', null, h('button.primary', { onclick: () => c.invite().catch((err) => this.toast(`No se pudo crear la invitación: ${err.message}`)) }, 'Invitar a tu rival')));
+        }
+        if (state === 'connecting') out.push(h('p.bot-wait', null, 'Conectando…'));
+        return h('div.live', null, out);
     }
 
     async shareLink(how) {
