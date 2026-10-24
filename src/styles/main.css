@@ -299,7 +299,7 @@ dialog::backdrop { background: #000a; }
 /* ------------------------------------------------------------ combat scenes (combatScene.js) */
 
 .combat-scene {
-    position: absolute; z-index: 6; top: 2%; left: 50%; transform: translateX(-50%); width: min(46%, 620px);
+    position: absolute; z-index: 6; top: 1%; left: 50%; transform: translateX(-50%); width: min(46%, 620px); /* top edge level with the compass */
     display: grid; gap: 4px; padding: 5px; border-radius: 6px; background: rgba(10, 12, 16, .92);
     border: 2px solid var(--gold); box-shadow: 0 6px 24px #000c; cursor: pointer; animation: cs-in .25s ease-out;
     transition: opacity .28s;
