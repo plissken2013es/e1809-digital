@@ -2,13 +2,17 @@
   "_notes": [
     "Positions on the illustrated board (assets/board/map.webp), in pixels of the full-resolution map (7016 x 4960; the WebP copy is scaled, multiply by its width / 7016).",
     "Measured on extracted/images/board/map.png by colour detection: each box is the axis-aligned bounding box [x0, y0, x1, y1] of a printed slot (tilted rectangles for blocks, circles for discs).",
-    "Casualty tracks: one cell per marker along the left edge (red, British casualties) and the right edge (blue, French casualties). Not measured yet (M2)."
+    "casualties: the casualty tracks on the edges, one cell per marker lost, filled from the top. Left (red): the British markers lost, 15 cells in groups of 5 (the French get +1 cube at 5 and +2 at 10). Right (lilac): the French markers lost, 12 cells in groups of 4 (the British get +1 at 4, +2 at 8, +3 at 12). Measured by colour; the left edge of the right track is cut by the map."
   ],
   "image": "assets/board/map.webp",
   "size": [7016, 4960],
   "locations": {
     "elvina": { "name": "Elviña", "center": [3475, 3501], "size": 145, "defenders": { "british": ["bentinck", "manningham_leith"], "french": ["merle", "mermet"] } },
     "palavea": { "name": "Palavea", "center": [5127, 3488], "size": 145, "defenders": { "british": ["hill"], "french": ["delaborde"] } }
+  },
+  "casualties": {
+    "british": [[35, 707, 175, 850], [35, 867, 175, 1010], [35, 1027, 175, 1170], [35, 1187, 175, 1330], [35, 1347, 175, 1490], [35, 1670, 175, 1813], [35, 1830, 175, 1973], [35, 1990, 175, 2133], [35, 2150, 175, 2293], [35, 2310, 175, 2453], [35, 2631, 175, 2774], [35, 2792, 175, 2935], [35, 2953, 175, 3096], [35, 3112, 175, 3255], [35, 3273, 175, 3416]],
+    "french": [[6830, 2158, 7016, 2301], [6830, 2311, 7016, 2454], [6830, 2479, 7016, 2622], [6830, 2641, 7016, 2784], [6830, 2953, 7016, 3096], [6830, 3112, 7016, 3255], [6830, 3273, 7016, 3416], [6830, 3433, 7016, 3576], [6830, 3744, 7016, 3887], [6830, 3901, 7016, 4044], [6830, 4065, 7016, 4208], [6830, 4225, 7016, 4368]]
   },
   "moore": {
     "1": [2936, 2352, 3128, 2552],

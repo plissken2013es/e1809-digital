@@ -117,6 +117,10 @@ test('board: a start slot per block, Moore positions and locations inside the ma
             assert.ok(slots.every(inside), u.id);
         }
     }
+    // casualty tracks: groups that end at the thresholds of the rulebook (§4.4)
+    assert.equal(BOARD.casualties.british.length, 15);
+    assert.equal(BOARD.casualties.french.length, 12);
+    assert.ok([...BOARD.casualties.british, ...BOARD.casualties.french].every(inside));
     assert.deepEqual(Object.keys(BOARD.moore), ['1', '2', '3']);
     assert.ok(Object.values(BOARD.moore).every(inside));
     for (const [id, loc] of Object.entries(LOCATIONS)) {

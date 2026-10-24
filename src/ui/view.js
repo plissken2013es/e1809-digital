@@ -5,7 +5,7 @@
 
 import { h } from './dom.js';
 import {
-    UNITS, COMMANDERS, ACTIONS, ACTION_BACKS, TACTICS, BOARD, LOCATIONS, unitsOf, SIDE_NAME, currentResults, describe,
+    UNITS, COMMANDERS, ACTIONS, ACTION_BACKS, TACTICS, BOARD, LOCATIONS, unitsOf, enemyOf, SIDE_NAME, currentResults, describe,
     cardLabel, orderLabel, makeRecord, encodeRecord, IllegalAction, eliminatedOf, currentDice, attackDice, activeModifiers,
 } from '../engine/index.js';
 import { createGreedyBot } from '../ai/greedyBot.js';
@@ -108,6 +108,13 @@ function diceInfo(g, id) {
     if (u.side === 'british' && u.type !== 'reserve') lines.push('Moore en su posición: +1 dado o un relanzamiento gratis');
     return { n, changed: n !== u.dice, text: lines.join('\n') };
 }
+
+/** Cells per group of the casualty tracks: each group ends at a threshold of the taker (docs/01 §4.4). */
+const CASUALTY_GROUPS = { british: 5, french: 4 };
+const CASUALTY_HINT = {
+    british: 'El francés recibe +1 cubo de Inercia al llegar a 5 bajas británicas y +2 a las 10.',
+    french: 'El británico recibe +1 cubo de Inercia al llegar a 4 bajas francesas, +2 a las 8 y +3 a las 12.',
+};
 
 /** A small white die with the number of dice. */
 const diceChip = (n, changed) => h(`span.d6${changed ? '.changed' : ''}`, null, n);
@@ -553,6 +560,22 @@ export class GameView {
                 : [`${u.name} `, info && diceChip(info.n, info.changed), st.morale !== null && ` ${st.morale}♥`];
             const tag = h(`div.unit-tag.${side}${out ? '.out' : ''}${focus.has(id) ? '.focus' : ''}`, { style: at([(Math.min(...xs) + Math.max(...xs)) / 2, top - 20]), title: info?.text ?? null }, tagBody);
             items.push(this.clickable(tag, id));
+        }
+        // casualty tracks on the edges: the markers each side has lost, kept by the other (§4.4)
+        for (const [victim, cells] of Object.entries(BOARD.casualties)) {
+            const taker = enemyOf(victim);
+            const n = g.players[taker].casualties;
+            const groups = CASUALTY_GROUPS[victim];
+            const title = `Bajas ${victim === 'french' ? 'francesas' : 'británicas'}: ${n}. ${CASUALTY_HINT[victim]}`;
+            cells.forEach((b, i) => {
+                if (i >= n) return;
+                const step = (i + 1) % groups === 0; // the last cell of a group: a threshold reached
+                items.push(h(`div.slot.cas.${CODE[victim]}${step ? '.step' : ''}`, { style: at(center(b)), title }));
+            });
+            if (n > cells.length) {
+                const last = cells.at(-1);
+                items.push(h(`div.cas-more.${CODE[victim]}`, { style: at([center(last)[0], last[3] + 90]), title }, `+${n - cells.length}`));
+            }
         }
         for (const [loc, l] of Object.entries(LOCATIONS)) {
             const owner = g.locations[loc];

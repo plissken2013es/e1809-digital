@@ -99,6 +99,10 @@ textarea { width: 100%; font: 12px/1.4 var(--mono); resize: vertical; }
 }
 .map .slot.fr { background: #2f62b4; }
 .map .slot.gb { background: #c23a2a; }
+/* the casualty tracks: the pieces lost, lying in the cells of the edges; gold rim on a threshold */
+.map .slot.cas { width: 2.2%; aspect-ratio: 1.45; cursor: help; }
+.map .slot.cas.step { box-shadow: 0 0 0 2px var(--gold), 0 3px 6px #000a; }
+.map .cas-more { position: absolute; transform: translate(-50%, -50%); font: 800 12px var(--mono); padding: 1px 5px; border-radius: 4px; background: #000c; color: #fff; }
 .map .slot.disc { width: 2.2%; aspect-ratio: 1; border-radius: 50%; }
 .map .slot.lost { background: transparent; border: 2px dashed rgba(0, 0, 0, .45); box-shadow: none; }
 .map .slot.gone { background: #444a; border-style: dotted; }
