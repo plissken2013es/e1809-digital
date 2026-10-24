@@ -8,3 +8,4 @@ remove or replace the game.
 | File | Game |
 |---|---|
 | `2026-10-24-humano-fr-vs-bot-gb.e18` | The user (French) against the greedy British bot, 21 turns. French win: Bentinck and Manningham/Leith destroyed. Reviewed turn by turn on 2026-10-24: no rule errors. |
+| `2026-10-24-humano-gb-vs-bot-fr.e18` | The user (British) against the greedy French bot, 21 turns. French win: Hill and Paget routed. Covers Soult's double activation, Moore felled on a move, Vacilación, A sangre y fuego, Maniobra sorpresa, Terreno escarpado, Coraje líquido and En el fragor. Reviewed on 2026-10-24: no rule errors. |
