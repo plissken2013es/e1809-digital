@@ -63,7 +63,15 @@ export function availableOrders(g, unitId) {
             out.push({ i, order, target: t });
         }
     });
-    return out;
+    // a target reached by several orders is attacked with the best of them (most dice; the first
+    // if equal): Hill on the Artillery without the −3 once Delaborde is defeated [D-54]
+    const best = {};
+    for (const o of out) {
+        if (o.order.act !== 'attack') continue;
+        const dice = baseDice(g, unitId, o.order);
+        if (!best[o.target] || dice > best[o.target].dice) best[o.target] = { o, dice };
+    }
+    return out.filter((o) => o.order.act !== 'attack' || best[o.target].o === o);
 }
 
 /**

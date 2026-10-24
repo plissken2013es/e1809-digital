@@ -239,6 +239,11 @@ test('a place changes hands only when its own last defender falls, not any unit 
     assert.equal(g.locations.palavea, 'french', 'Mermet never defended Palavea');
 });
 
+test('one option per target: the order with most dice (Hill on the Artillery without the −3) [D-54]', () => {
+    const g = game({ locations: { palavea: 'british' }, units: { delaborde: { status: 'destroyed', blocks: 0 } } }).state;
+    assert.deepEqual(attackDice(g, 'hill').map((a) => [a.target, a.dice]), [['artilleria', 6], ['merle', 6]]);
+});
+
 test('a second Division lost ends the game [§1, D-27]', () => {
     const s = game({ ...hillScenario({ dice: [6, 6, 1, 2, 3, 4] }), units: { hill: { blocks: 1 }, paget: { status: 'routed', blocks: 0 } } });
     delabordeHitsHill(s);

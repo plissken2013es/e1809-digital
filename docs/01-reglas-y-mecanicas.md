@@ -65,6 +65,7 @@ Unidades (`units.json`):
 - Cada tarjeta trae sus **órdenes** (alternativas, separadas por «~») y sus **modificadores** de dados. Al activarla, el jugador elige **una** orden posible [D-11]:
   - **Condiciones:** «Si Elviña es francesa», «Si X está derrotado», «Si está en Paget#2»…
   - **Objetivo válido:** una unidad enemiga en juego, o una plaza que controla el enemigo [D-12].
+  - **Un objetivo, una opción:** si varias órdenes posibles atacan al mismo objetivo, solo se ofrece la de más dados (la primera si empatan). Hill, con Delaborde derrotado, ataca a la Artillería sin el −3; la Artillería, con Elviña francesa, a Bentinck o a Manningham/Leith sin el −1 [D-54].
   - «Derrotado», «destruido» y «muerta» significan **eliminada** (destruida o desbandada); «Artillería» y «Artillería activa», que sigue en juego [D-10].
 - Si ninguna orden es posible, se aplica §5.4.
 - Dados del combate = dados de la tarjeta + modificador de la orden + modificadores de la tarjeta que se cumplan + apoyo de Moore + Soult + tácticas. Mínimo 1 [D-21].
@@ -325,7 +326,7 @@ Reglas de la v1.6c (§7), resumidas:
 
 ## 14. Decisiones para la versión digital
 
-Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-19, de D-46 a D-52 y D-53, 2026-10-24); el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
+Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-19, de D-46 a D-52, D-53 y D-54, 2026-10-24); el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
 
 | Id | Hueco o conflicto | Decisión |
 |---|---|---|
@@ -378,6 +379,7 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-
 | D-51 | *Reorganización*, *Improvisación*: «cualquier unidad» | ✔ Unidades propias. *Improvisación* deja al menos 1 punto a la que cede |
 | D-52 | *Recapacitando* | ✔ Cuenta como la compra del turno: después no se puede comprar del Mercado ni se descarta la carta de la derecha |
 | D-53 | Más bajas que bloques le quedan a la unidad | ✔ (2026-10-24) La v1.6c no lo dice. Las sobrantes se pierden: la unidad retira lo que tiene y queda destruida, el rival solo apunta los bloques retirados (el contador cuenta fichas, §3.5) y su pérdida de moral pendiente no se aplica. En una plaza, igual con lo que no absorba ningún defensor |
+| D-54 | Varias órdenes contra el mismo objetivo | ✔ (2026-10-24, a petición del usuario: veía opciones repetidas) Se ofrece solo la de más dados, la primera si empatan. Casos: Hill contra la Artillería (−3 o, con Delaborde derrotado, sin penalización), la Artillería contra Bentinck y Manningham/Leith (−1 o, con Elviña francesa, sin penalización) y Merle contra Bentinck (dos órdenes iguales) |
 
 ## 15. Ideas de la v2.1 (no forman parte de las reglas)
 
