@@ -189,7 +189,8 @@ export function eliminate(g, unitId, how) {
     // A location whose defenders have all gone changes hands [D-14]
     for (const loc of Object.keys(LOCATIONS)) {
         const owner = g.locations[loc];
-        if (owner === sideOf(unitId) && locationDefenders(g, loc).length === 0) {
+        // only a place this unit defended: one already without defenders does not flip back and forth
+        if (owner === sideOf(unitId) && LOCATIONS[loc].defenders[owner].includes(unitId) && locationDefenders(g, loc).length === 0) {
             g.locations[loc] = enemyOf(owner);
             log(g, `${LOCATIONS[loc].name} pasa a manos del ${SIDE_NAME[enemyOf(owner)]}: no le quedan defensores.`, enemyOf(owner));
         }

@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Session, results, deckOf, availableOrders, currentDice, attackDice } from '../src/engine/index.js';
+import { eliminate } from '../src/engine/state.js';
 import { answer, until, passive } from './helpers.js';
 
 const BRITISH_HAND = ['hill-1', 'hill-2', 'hill-3'];
@@ -229,6 +230,13 @@ test('more casualties than blocks left: the rest are lost, and so is the pending
     const hill = s.state.units.hill;
     assert.deepEqual([hill.status, hill.blocks, hill.morale], ['destroyed', 0, 6]);
     assert.equal(s.state.players.french.casualties, 1, 'only the block removed goes to the track');
+});
+
+test('a place changes hands only when its own last defender falls, not any unit of its owner [D-14]', () => {
+    // as in a recorded game: Palavea French with Delaborde gone, then Mermet destroyed
+    const g = game({ locations: { palavea: 'french' }, units: { delaborde: { status: 'destroyed', blocks: 0 } } }).state;
+    assert.throws(() => eliminate(g, 'mermet', 'destroyed'), /dos Divisiones/);
+    assert.equal(g.locations.palavea, 'french', 'Mermet never defended Palavea');
 });
 
 test('a second Division lost ends the game [§1, D-27]', () => {

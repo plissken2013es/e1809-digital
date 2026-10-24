@@ -342,7 +342,7 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-
 | D-11 | ¿Puede el jugador elegir cualquier orden o va por prioridad? | ✔ En 2 jugadores, cualquiera cuya condición se cumpla. Hay que ejecutar una si existe (el reglamento lo da por obligatorio); reforzar también vale |
 | D-12 | ¿Se puede «Atacar Elviña» si ya es propia? | No: solo si la controla el enemigo |
 | D-13 | Bajas al atacar una plaza | ✔ La primera baja del combate cambia el control y no retira ficha; el resto retira bloques de los defensores que tenía la plaza al tirar. La moral se aplica normal, repartida por el dueño |
-| D-14 | Plaza sin defensores | Si todos los defensores del bando que la controla quedan eliminados (desbandada o destrucción), pasa al otro. La v1.6c solo lo dice de Palavea y de la desbandada |
+| D-14 | Plaza sin defensores | Si todos los defensores del bando que la controla quedan eliminados (desbandada o destrucción), pasa al otro. Solo cuenta al caer uno de sus defensores: una plaza que ya estaba sin ellos no cambia cuando cae otra unidad (corregido el 2026-10-24). La v1.6c solo lo dice de Palavea y de la desbandada |
 | D-15 | Tests de moral: cuántos y cuándo | ✔ **Un test por golpe** (§7), con la moral que queda tras él. El de la activación, en el paso Combate 1. Los del combate, tras aplicar la tirada final (defensor y luego atacante). Los de pagar un relanzamiento y los de cartas, al momento. Opción `moraleTests: point` (un test por punto perdido, lectura literal) |
 | D-16 | Salvar de la desbandada | Tras fallar el test; la unidad conserva la moral que tenga (más de 0) |
 | D-17 | La Reserva no tiene moral: ¿cómo paga la activación? | ✔ No paga. Opción `reserveActivation: block` (retira 1 bloque, lectura literal) |
