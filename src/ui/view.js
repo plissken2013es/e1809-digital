@@ -14,6 +14,7 @@ import { BOT_SPEEDS, rulesLink } from './setup.js';
 import { snapshot, animateBoard } from './anim.js';
 import { playCombat, playCapture, playRout } from './combatScene.js';
 import { setSound } from './audio.js';
+import { emptyWindow } from './mail.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
 /** Replay of what happened in each answer (Session frames): ms per step; step: wait for "Siguiente"; off: no replay. */
@@ -296,7 +297,7 @@ export class GameView {
      */
     autoAnswer(p) {
         if (!p || this.isBot(p.side)) return null;
-        const empty = p.kind === 'tactic' && p.options.every((o) => o.id === 'pass' || o.id === 'discard3');
+        const empty = emptyWindow(p);
         // the rival by correspondence: his windows without cards pass by themselves, so only real decisions travel
         if (this.isRemote(p.side)) return empty ? 'pass' : null;
         if (this.ui.auto === 'all') return null;

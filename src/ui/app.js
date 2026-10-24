@@ -4,6 +4,7 @@ import { Session, decodeRecord, replayRecord, enemyOf } from '../engine/index.js
 import { renderSetup } from './setup.js';
 import { GameView } from './view.js';
 import { preloadAll } from './preload.js';
+import { receive } from './mail.js';
 
 const BUILD = '2026-10-24';
 const SAVE_KEY = 'e18-save';
@@ -57,9 +58,6 @@ function rememberSide(id, side) {
     store.set(MAIL_KEY, all);
 }
 
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const isPrefix = (short, long) => short.length <= long.length && short.every((x, i) => same(x, long[i]));
-
 /**
  * A link with a game (…#E18.…) was opened: a correspondence game goes on in the side this
  * browser plays (the one that has to decide, the first time); any other code is loaded to look at.
@@ -75,19 +73,19 @@ async function openLink(code) {
         return;
     }
     const mine = (store.get(MAIL_KEY) ?? {})[id];
-    const ours = mine?.answers ?? [];
-    const fresh = record.answers.length - ours.length;
+    const got = receive(mine?.answers ?? null, record.answers);
+    const fresh = got.answers.length - (mine?.answers.length ?? 0);
     let session = received;
     let replay = null;
     let notice = `Partida recibida: ${fresh} decisi${fresh === 1 ? 'ón nueva' : 'ones nuevas'} del rival.`;
     if (failedAt != null) notice = `El juego ha cambiado desde que se envió: la partida se para en la decisión ${failedAt + 1} (${error}).`;
-    else if (mine && ours.length >= record.answers.length && isPrefix(record.answers, ours)) {
-        session = new Session(mine.setup, ours);
+    else if (got.stale) {
+        session = new Session(mine.setup, got.answers);
         notice = 'Este enlace no trae nada nuevo: sigues donde lo dejaste.';
     } else {
-        if (mine && !isPrefix(ours, record.answers)) notice = 'Atención: este enlace no continúa tu copia de la partida (se separan); se sigue con el enlace.';
+        if (got.diverged) notice = 'Atención: este enlace no continúa tu copia de la partida (se separan); se sigue con el enlace.';
         // what the rival did since our copy (all of it, the first time) is replayed step by step
-        const from = mine && isPrefix(ours, record.answers) ? ours.length : 0;
+        const from = got.from;
         session = new Session(record.setup, record.answers.slice(0, from));
         replay = { frames: [], logStart: session.state.log.length };
         for (const a of record.answers.slice(from)) {
