@@ -284,3 +284,14 @@ dialog::backdrop { background: #000a; }
     .title { font-size: 28px; }
     .unit-row { grid-template-columns: 90px minmax(0, 1fr) auto; }
 }
+
+/* ------------------------------------------------------------ board animations (anim.js) */
+
+.map .ghost { pointer-events: none; z-index: 3; }
+.float-delta { position: absolute; z-index: 4; pointer-events: none; font: 800 13px/1 var(--mono); padding: 2px 6px; border-radius: 4px; background: #000c; white-space: nowrap; }
+.float-delta.good { color: #7fe0a6; }
+.float-delta.bad { color: #ff8a80; }
+.topbar .pill { position: relative; }
+.pill .delta { position: absolute; z-index: 5; right: 6px; top: calc(100% + 3px); font: 800 11px/1 var(--mono); padding: 1px 4px; border-radius: 3px; background: #000; pointer-events: none; }
+.pill .delta.good { color: #7fe0a6; }
+.pill .delta.bad { color: #ff8a80; }

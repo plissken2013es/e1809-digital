@@ -11,6 +11,7 @@ import {
 import { createGreedyBot } from '../ai/greedyBot.js';
 import { createRandomBot } from '../ai/randomBot.js';
 import { BOT_SPEEDS, rulesLink } from './setup.js';
+import { snapshot, animateBoard } from './anim.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
 /** Replay of what happened in each answer (Session frames): ms per step; step: wait for "Siguiente"; off: no replay. */
@@ -382,6 +383,7 @@ export class GameView {
         clearTimeout(this.timer);
         this.stopPlayback();
         this.session.undo(1);
+        this.quiet = true;
         while (this.session.canUndo && this.g.pending && this.isBot(this.g.pending.side)) this.session.undo(1);
         this.paused = SIDES.some((s) => this.isBot(s));
         this.error = null;
@@ -421,6 +423,11 @@ export class GameView {
         ));
         const log = this.root.querySelector('.log');
         if (log && atBottom) log.scrollTop = log.scrollHeight;
+        // what changed since the last state drawn moves on the map (not after undoing or rewinding)
+        const shown = snapshot(this.g);
+        if (!this.quiet) animateBoard(this.root, this.shown, shown);
+        this.shown = shown;
+        this.quiet = false;
         this.scheduleNext();
     }
 
@@ -455,7 +462,7 @@ export class GameView {
             h('span.brand', null, 'Elviña 1809'),
             h('span.pill', null, `Ronda ${g.roundNo} · turno ${g.turnNo}`),
             g.turnNo > 0 && h(`span.pill.${CODE[g.active]}`, null, `Turno ${SIDE_TITLE[g.active].toLowerCase()}`),
-            ...SIDES.map((s) => h(`span.pill.${CODE[s]}`, { title: `Cubos de Inercia del ${SIDE_NAME[s]} · ${streakHint(g.players[s])}` }, `${SIDE_TITLE[s]}: ${g.players[s].cubes} cubos `, streakView(g.players[s], 4))),
+            ...SIDES.map((s) => h(`span.pill.${CODE[s]}`, { title: `Cubos de Inercia del ${SIDE_NAME[s]} · ${streakHint(g.players[s])}`, dataset: { side: s } }, `${SIDE_TITLE[s]}: ${g.players[s].cubes} cubos `, streakView(g.players[s], 4))),
             h('span.pill.gold', { title: 'Reserva común de cubos de Inercia' }, `Reserva ${g.supply ?? '∞'}`),
             h('span.pill', { title: 'Divisiones eliminadas (2 = derrota)' }, `Bajas de División: FR ${eliminatedOf(g, 'french').length} · GB ${eliminatedOf(g, 'british').length}`),
             h('span.spacer'),
@@ -549,7 +556,8 @@ export class GameView {
             const out = st.status !== 'in';
             slots.forEach((b, i) => {
                 const cls = out ? '.gone' : i < st.blocks ? `.${side}` : '.lost';
-                items.push(h(`div.slot${cls}${u.type === 'artillery' ? '.disc' : ''}`, { style: at(center(b)), title: u.name }));
+                const dataset = !out && i < st.blocks ? { unit: id, i } : null; // the pieces anim.js moves
+                items.push(h(`div.slot${cls}${u.type === 'artillery' ? '.disc' : ''}`, { style: at(center(b)), title: u.name, dataset }));
             });
             const top = slots.reduce((m, b) => Math.min(m, b[1]), Infinity);
             const xs = slots.flatMap((b) => [b[0], b[2]]);
@@ -559,7 +567,7 @@ export class GameView {
             const tagBody = out
                 ? `${u.name}: ${st.status === 'routed' ? 'desbandada' : 'destruida'}`
                 : [`${u.name} `, info && diceChip(info.n, info.changed), st.morale !== null && ` ${st.morale}♥`];
-            const tag = h(`div.unit-tag.${side}${out ? '.out' : ''}${focus.has(id) ? '.focus' : ''}`, { style: at([(Math.min(...xs) + Math.max(...xs)) / 2, top - 20]), title: info?.text ?? null }, tagBody);
+            const tag = h(`div.unit-tag.${side}${out ? '.out' : ''}${focus.has(id) ? '.focus' : ''}`, { style: at([(Math.min(...xs) + Math.max(...xs)) / 2, top - 20]), title: info?.text ?? null, dataset: { unit: id } }, tagBody);
             items.push(this.clickable(tag, id));
         }
         // casualty tracks on the edges: the markers each side has lost, kept by the other (§4.4)
@@ -571,7 +579,7 @@ export class GameView {
             cells.forEach((b, i) => {
                 if (i >= n) return;
                 const step = (i + 1) % groups === 0; // the last cell of a group: a threshold reached
-                items.push(h(`div.slot.cas.${CODE[victim]}${step ? '.step' : ''}`, { style: at(center(b)), title }));
+                items.push(h(`div.slot.cas.${CODE[victim]}${step ? '.step' : ''}`, { style: at(center(b)), title, dataset: { cas: victim, i } }));
             });
             if (n > cells.length) {
                 const last = cells.at(-1);
@@ -580,7 +588,7 @@ export class GameView {
         }
         for (const [loc, l] of Object.entries(LOCATIONS)) {
             const owner = g.locations[loc];
-            const el = h(`div.ctrl.${CODE[owner]}${focus.has(loc) ? '.focus' : ''}`, { style: at(l.center), title: `${l.name}: ${SIDE_NAME[owner]}` });
+            const el = h(`div.ctrl.${CODE[owner]}${focus.has(loc) ? '.focus' : ''}`, { style: at(l.center), title: `${l.name}: ${SIDE_NAME[owner]}`, dataset: { loc } });
             items.push(this.clickable(el, loc, { zoom: false }));
         }
         // Moore: his marker, and the positions he can ride to when that is the question
@@ -628,7 +636,7 @@ export class GameView {
             ? h('span.muted', null, 'sin moral · no combate')
             : h('div.morale', { title: `Moral ${st.morale}/${u.morale.max}` }, Array.from({ length: u.morale.max + 1 }, (_, v) => h(`b${v === st.morale ? '.on' : ''}${v <= 5 ? '.test' : ''}`, null, v)));
         const status = st.status === 'in' ? `${st.blocks}▮` : st.status === 'routed' ? 'Desbandada' : 'Destruida';
-        const row = h(`div.unit-row${st.status !== 'in' ? '.out' : ''}${c && (c.attacker === id || c.target === id) ? '.focus' : ''}`, null, name, morale, h('span.blocks', null, status));
+        const row = h(`div.unit-row${st.status !== 'in' ? '.out' : ''}${c && (c.attacker === id || c.target === id) ? '.focus' : ''}`, { dataset: { unit: id } }, name, morale, h('span.blocks', null, status));
         const opts = this.optionsFor(id);
         if (opts.length === 1) {
             row.classList.add('option');
@@ -869,6 +877,7 @@ export class GameView {
             title: 'Volver a antes de esta decisión',
             onclick: () => {
                 this.session.rewindTo(i);
+                this.quiet = true;
                 this.paused = SIDES.some((s) => this.isBot(s));
                 this.dialog.close();
                 this.render();
