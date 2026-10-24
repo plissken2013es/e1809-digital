@@ -85,6 +85,12 @@ textarea { width: 100%; font: 12px/1.4 var(--mono); resize: vertical; }
 .pill.fr { border-color: var(--fr); background: var(--fr-dim); color: #dbe7fb; }
 .pill.gb { border-color: var(--gb); background: var(--gb-dim); color: #fbe0db; }
 .pill.gold { color: var(--gold); border-color: #5a4521; }
+.pill.mail { color: var(--gold); border-color: var(--gold); }
+/* correspondence: the game travels as a link */
+.decision .mail { display: grid; gap: 8px; }
+.decision .mail p { margin: 0; }
+.mail-list { display: grid; gap: 4px; }
+.mail-list p { margin: 0; }
 .pill[title] { cursor: help; }
 
 /* a column of blocks (flex, not grid: in a grid row the map, with aspect-ratio and overflow hidden, can get less height than it needs) */

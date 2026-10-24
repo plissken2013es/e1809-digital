@@ -170,6 +170,9 @@ export class GameView {
         this.error = null;
         this.timer = null;
         this.makeBots();
+        /** Correspondence: the rival's side (it decides elsewhere) and what can no longer be undone (received or sent). */
+        this.mail = SIDES.find((s) => this.players[s] === 'mail') ?? null;
+        this.mailFloor = session.answers.length;
         this.preview = h('div.preview');
         this.dialog = h('dialog');
         document.body.append(this.preview, this.dialog);
@@ -190,14 +193,20 @@ export class GameView {
             }
         };
         document.addEventListener('keydown', this.onKey);
-        this.render();
+        // a game received by correspondence: what the rival did is replayed first
+        if (opts.replay?.frames.length) {
+            this.mark = opts.replay.logStart;
+            this.playFrames(opts.replay.frames, opts.replay.logStart);
+        } else {
+            this.render();
+        }
         if (opts.notice) this.toast(opts.notice);
     }
 
     makeBots() {
         const seed = `${this.session.setup.seed}-${this.session.answers.length}`;
         const make = (kind, side) => kind === 'greedy' ? createGreedyBot(`${seed}-${side}`, () => this.session.state) : createRandomBot(`${seed}-${side}`);
-        this.bots = Object.fromEntries(SIDES.map((s) => [s, this.players[s] === 'human' ? null : make(this.players[s], s)]));
+        this.bots = Object.fromEntries(SIDES.map((s) => [s, ['human', 'mail'].includes(this.players[s]) ? null : make(this.players[s], s)]));
     }
 
     dispose() {
@@ -230,10 +239,20 @@ export class GameView {
         return Boolean(this.bots[side]);
     }
 
+    /** The rival by correspondence: he answers in his own browser. */
+    isRemote(side) {
+        return this.players[side] === 'mail';
+    }
+
+    /** Undo stops at the last decision received or sent by correspondence. */
+    canUndo() {
+        return this.session.canUndo && (!this.mail || this.session.answers.length > this.mailFloor);
+    }
+
     /** Whose hand is face up: the humans' (only the one deciding when both are human); all with "show hands". */
     handVisible(side) {
         if (this.revealAll) return true;
-        const humans = SIDES.filter((s) => !this.isBot(s));
+        const humans = SIDES.filter((s) => !this.isBot(s) && !this.isRemote(s));
         if (!humans.length) return true;
         if (humans.length === 1) return humans[0] === side;
         return this.g.pending?.side === side;
@@ -258,7 +277,11 @@ export class GameView {
         if (p && !this.isBot(p.side) && !auto) this.mark = logStart;
         this.selection.clear();
         this.opts.save(this.session, this.players);
-        const frames = this.session.frames;
+        this.playFrames(this.session.frames, logStart);
+    }
+
+    /** Shows the steps of one or more answers as the replay setting says (or just the result). */
+    playFrames(frames, logStart) {
         const shown = frames.filter((f) => (this.ui.dice === 'on' && beatDice(f.beat).length) || this.scenesOf(f.beat).length);
         if (this.error || !frames.length) this.render();
         else if (this.ui.replay !== 'off') this.startPlayback(frames, logStart);
@@ -272,8 +295,12 @@ export class GameView {
      * (no) and the card to draw (the top one).
      */
     autoAnswer(p) {
-        if (!p || this.isBot(p.side) || this.ui.auto === 'all') return null;
-        if (p.kind === 'tactic' && p.options.every((o) => o.id === 'pass' || o.id === 'discard3')) return 'pass';
+        if (!p || this.isBot(p.side)) return null;
+        const empty = p.kind === 'tactic' && p.options.every((o) => o.id === 'pass' || o.id === 'discard3');
+        // the rival by correspondence: his windows without cards pass by themselves, so only real decisions travel
+        if (this.isRemote(p.side)) return empty ? 'pass' : null;
+        if (this.ui.auto === 'all') return null;
+        if (empty) return 'pass';
         if (this.ui.auto === 'minimal') {
             if (p.kind === 'prevent') return 'no';
             if (p.kind === 'draw') return 'top';
@@ -382,7 +409,7 @@ export class GameView {
     /** Hotseat: a new player must take the device before the screen shows his hand. */
     needsHandoff() {
         const p = this.session.state.pending;
-        if (!this.ui.handoff || this.playback || this.revealAll || !p || this.session.over) return false;
+        if (!this.ui.handoff || this.mail || this.playback || this.revealAll || !p || this.session.over) return false;
         if (SIDES.some((s) => this.isBot(s)) || this.autoAnswer(p)) return false;
         return this.shownSide !== p.side;
     }
@@ -420,12 +447,16 @@ export class GameView {
 
     /** Back to the last decision of a human (the bots' answers in between go too). */
     undo() {
-        if (!this.session.canUndo) return this.toast('No se puede deshacer más: la última decisión tiró dados, robó o barajó.');
+        if (!this.canUndo()) {
+            return this.toast(this.mail && this.session.canUndo
+                ? 'No se puede deshacer lo que ya has enviado o recibido del rival.'
+                : 'No se puede deshacer más: la última decisión tiró dados, robó o barajó.');
+        }
         clearTimeout(this.timer);
         this.stopPlayback();
         this.session.undo(1);
         this.quiet = true;
-        while (this.session.canUndo && this.g.pending && this.isBot(this.g.pending.side)) this.session.undo(1);
+        while (this.canUndo() && this.g.pending && (this.isBot(this.g.pending.side) || this.isRemote(this.g.pending.side))) this.session.undo(1);
         this.paused = SIDES.some((s) => this.isBot(s));
         this.error = null;
         this.selection.clear();
@@ -507,7 +538,8 @@ export class GameView {
             h('span.pill.gold', { title: 'Reserva común de cubos de Inercia' }, `Reserva ${g.supply ?? '∞'}`),
             h('span.pill', { title: 'Divisiones eliminadas (2 = derrota)' }, `Bajas de División: FR ${eliminatedOf(g, 'french').length} · GB ${eliminatedOf(g, 'british').length}`),
             h('span.spacer'),
-            h('button.small', { onclick: () => this.undo(), disabled: !this.session.canUndo, title: 'Ctrl+Z' }, '↶ Deshacer'),
+            this.mail && h('span.pill.mail', { title: 'Cada vez que le toque al rival, envíale el enlace de la partida' }, `Por correspondencia · llevas el ${SIDE_NAME[enemyOf(this.mail)]}`),
+            h('button.small', { onclick: () => this.undo(), disabled: !this.canUndo(), title: 'Ctrl+Z' }, '↶ Deshacer'),
             botsExist && h('button.small', {
                 onclick: () => {
                     this.paused = !this.paused;
@@ -523,7 +555,7 @@ export class GameView {
             sel('sound', SOUND, 'Sonidos de batalla de las escenas de combate'),
             h('button.small', { onclick: () => this.copyCode() }, 'Copiar código'),
             rulesLink('.small'),
-            h('button.small', { onclick: () => this.openDebug() }, 'Depuración'),
+            !this.mail && h('button.small', { onclick: () => this.openDebug() }, 'Depuración'), // it shows hidden cards
             h('button.small', { onclick: () => this.opts.onExit() }, 'Menú'),
         );
     }
@@ -718,10 +750,15 @@ export class GameView {
         if (err) out.push(h('div.result.error', null, 'Error del motor: es un fallo. Deshaz para volver atrás o copia el código para reportarlo.', h('pre', null, err.stack ?? err.message)));
         if (g.result) {
             out.push(h(`div.result.${g.result.winner}`, null, `Gana el ${SIDE_NAME[g.result.winner]} en la ronda ${g.result.round}: ${g.result.reason}.`));
+            if (this.mail) out.push(this.mailPanel(true));
             out.push(h('button.primary', { onclick: () => this.opts.onExit() }, 'Nueva partida'));
         }
         if (g.combat) out.push(this.combatBox());
         if (p && !this.session.over && !this.isBot(p.side)) out.push(this.summary());
+        if (p && !this.session.over && this.isRemote(p.side)) {
+            out.push(this.mailPanel(false));
+            return h('section.decision', { 'aria-live': 'polite' }, out);
+        }
         if (p && !this.session.over) {
             const bot = this.isBot(p.side);
             out.push(h(`span.who.${CODE[p.side]}${bot ? '.bot' : ''}`, null, `Decide: ${SIDE_TITLE[p.side]}`));
@@ -760,6 +797,41 @@ export class GameView {
             }
         }
         return h('section.decision', { 'aria-live': 'polite' }, out);
+    }
+
+    /** Correspondence: the rival has to decide (or see the end); the game travels as a link. */
+    mailPanel(over) {
+        const rival = SIDE_NAME[this.mail];
+        return h(
+            'div.mail', null,
+            h(`span.who.${CODE[this.mail]}`, null, over ? 'Partida terminada' : `Le toca al ${rival}`),
+            h('p', null, over ? `Envía la partida al ${rival} para que vea el final.` : `Envíale la partida: al abrir el enlace, seguirá desde aquí en su navegador.`),
+            h('div.opts', null,
+                navigator.share && h('button.primary', { onclick: () => this.shareLink('share') }, 'Compartir… (WhatsApp, Telegram…)'),
+                h(`button${navigator.share ? '' : '.primary'}`, { onclick: () => this.shareLink('copy') }, 'Copiar enlace'),
+                h('button', { onclick: () => this.shareLink('mail') }, 'Enviar por correo')),
+            h('p.hint', null, 'Cuando te devuelva su enlace, ábrelo en este navegador y la partida seguirá donde la dejasteis. Lo enviado ya no se puede deshacer.'),
+        );
+    }
+
+    async shareLink(how) {
+        const code = await encodeRecord(makeRecord(this.session, this.opts.build));
+        const url = `${location.origin}${location.pathname}#${code}`;
+        const text = this.session.over
+            ? `Elviña 1809: la partida ha terminado (ronda ${this.session.state.roundNo}).`
+            : `Elviña 1809, ronda ${this.session.state.roundNo}: te toca a ti (${SIDE_NAME[this.mail]}).`;
+        this.mailFloor = this.session.answers.length; // what has been sent cannot be undone
+        try {
+            if (how === 'share') await navigator.share({ title: 'Elviña 1809', text, url });
+            else if (how === 'mail') location.href = `mailto:?subject=${encodeURIComponent('Elviña 1809: te toca')}&body=${encodeURIComponent(`${text}\n\n${url}`)}`;
+            else {
+                await navigator.clipboard.writeText(url);
+                this.toast('Enlace copiado: pégalo en WhatsApp, Telegram o un correo.');
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') this.openDialog('Enlace de la partida', h('p', null, text), h('textarea', { rows: 6, readonly: true }, url));
+        }
+        this.render();
     }
 
     /** One step of the replay: what happened, the dice, and buttons to go on. */
@@ -848,8 +920,10 @@ export class GameView {
             if (opts.length === 1 && pend?.kind === 'tactic') el.addEventListener('click', () => this.act(opts[0].id));
             return this.hover(el, id);
         });
-        const who = h('select', { onchange: (e) => this.setPlayer(side, e.target.value), title: 'Quién juega este bando' },
-            [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio']].map(([v, l]) => h('option', { value: v, selected: this.players[side] === v }, l)));
+        const who = this.mail
+            ? h('small.muted', null, this.isRemote(side) ? 'Rival por correspondencia' : 'Tú')
+            : h('select', { onchange: (e) => this.setPlayer(side, e.target.value), title: 'Quién juega este bando' },
+                [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio']].map(([v, l]) => h('option', { value: v, selected: this.players[side] === v }, l)));
         return h(
             'section.panel', null,
             h('h2', null, h(`span.${CODE[side]}`, null, SIDE_TITLE[side]), h('small', null, `${p.cubes} cubos · mazo ${p.deck.length} · descarte ${p.discard.length}`), who),

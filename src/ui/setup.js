@@ -1,10 +1,11 @@
-// Setup screen: who plays each side (human or bot), rules options (docs/01 §12),
-// seed and a debug scenario. Also continues the saved game or loads an E18. code.
+// Setup screen: who plays each side (human, bot or a rival by correspondence),
+// rules options (docs/01 §12), seed and a debug scenario. Also continues the saved
+// game or a correspondence game, or loads an E18. code.
 
 import { h } from './dom.js';
 import { DEFAULT_SETUP, DEFAULT_RULES } from '../engine/index.js';
 
-export const PLAYERS = [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio']];
+export const PLAYERS = [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio'], ['mail', 'Rival por correspondencia']];
 export const BOT_SPEEDS = [['fast', 'Rápida'], ['normal', 'Normal'], ['slow', 'Lenta'], ['step', 'Paso a paso (botón)']];
 
 /** Rules options of docs/01 §12: [key, label, [[value, text], …]]. The first value is the default. */
@@ -29,9 +30,9 @@ export const rulesLink = (extra = '') => h(`a.button${extra}`, { href: 'rules.ht
 const field = (label, control, hint) => h('label.field', null, h('span', null, label), control, hint && h('p.hint', null, hint));
 
 /**
- * @param {{ prefs: any, saved: any, onStart: Function, onContinue: Function, onLoadCode: Function }} o
+ * @param {{ prefs: any, saved: any, mail: any[], onStart: Function, onContinue: Function, onLoadCode: Function, onMail: Function, onForgetMail: Function }} o
  */
-export function renderSetup(root, { prefs, saved, onStart, onContinue, onLoadCode }) {
+export function renderSetup(root, { prefs, saved, mail = [], onStart, onContinue, onLoadCode, onMail, onForgetMail }) {
     const p = prefs ?? {};
     const rules = { ...DEFAULT_RULES, ...p.setup?.rules };
     const players = { french: 'human', british: 'greedy', ...p.players };
@@ -63,7 +64,12 @@ export function renderSetup(root, { prefs, saved, onStart, onContinue, onLoadCod
                 }
                 const setup = { seed: f.get('seed') || String(Date.now() % 100000), rules: r, scenario: scenarioJson };
                 const who = { french: f.get('french'), british: f.get('british') };
-                if (!replaceSaved()) return;
+                const remote = Object.values(who).filter((k) => k === 'mail').length;
+                if (remote && (remote > 1 || !Object.values(who).includes('human'))) {
+                    err.textContent = 'Por correspondencia: un bando es «Humano» (tú) y el otro «Rival por correspondencia».';
+                    return;
+                }
+                if (!remote && !replaceSaved()) return; // a correspondence game is kept apart
                 try {
                     onStart(setup, who, f.get('speed'));
                 } catch (ex) {
@@ -82,10 +88,18 @@ export function renderSetup(root, { prefs, saved, onStart, onContinue, onLoadCod
             ),
         ),
         saved && h('p', null, h('button.primary', { type: 'button', onclick: onContinue }, `Continuar la partida guardada (${savedText})`)),
+        mail.length > 0 && h(
+            'div.mail-list', null,
+            h('p.kicker', null, 'Partidas por correspondencia'),
+            mail.map((m) => h('p', null,
+                h('button', { type: 'button', onclick: () => onMail(m.id) }, `Continuar: llevas el ${m.side === 'french' ? 'francés' : 'británico'} · ronda ${m.round} · ${m.answers} decisi${m.answers === 1 ? 'ón' : 'ones'}`),
+                ' ',
+                h('button.ghost.small', { type: 'button', title: 'Borrar esta partida de este navegador', onclick: () => confirm('¿Olvidar esta partida en este navegador? Si el rival te vuelve a enviar su enlace, se recupera.') && onForgetMail(m.id) }, 'Olvidar'))),
+        ),
         h(
             'div.setup-grid', null,
             field('Francés (Soult)', select('french', players.french, PLAYERS)),
-            field('Británico (Moore)', select('british', players.british, PLAYERS)),
+            field('Británico (Moore)', select('british', players.british, PLAYERS), 'Por correspondencia: tú eres «Humano»; cada vez que le toque al rival, le envías un enlace (WhatsApp, correo…) y él te devuelve otro.'),
             field('Velocidad de los bots', select('speed', p.speed ?? 'normal', BOT_SPEEDS), 'También en la barra superior.'),
             field('Semilla', seed, 'Misma semilla + mismas decisiones = misma partida.'),
         ),
