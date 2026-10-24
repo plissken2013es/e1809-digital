@@ -47,6 +47,7 @@ function beatText(b) {
         case 'moore_dead': return 'Muere Sir John Moore';
         case 'rally': return `Arenga de Moore: sale ${b.roll}, ${b.ok ? 'la unidad se salva' : 'no basta'}`;
         case 'rout': return `¡Desbandada de ${UNITS[b.unit].name}!`;
+        case 'received': return 'Así lo dejaste; ahora, lo que ha hecho el rival';
         default: return b.kind;
     }
 }
@@ -283,7 +284,7 @@ export class GameView {
 
     /** Shows the steps of one or more answers as the replay setting says (or just the result). */
     playFrames(frames, logStart) {
-        const shown = frames.filter((f) => (this.ui.dice === 'on' && beatDice(f.beat).length) || this.scenesOf(f.beat).length);
+        const shown = frames.filter((f) => f.beat.kind === 'received' || (this.ui.dice === 'on' && beatDice(f.beat).length) || this.scenesOf(f.beat).length);
         if (this.error || !frames.length) this.render();
         else if (this.ui.replay !== 'off') this.startPlayback(frames, logStart);
         else if (shown.length) this.startPlayback(shown, logStart, { diceOnly: true }); // only the throws and the combat scenes

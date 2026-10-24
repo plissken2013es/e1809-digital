@@ -87,7 +87,9 @@ async function openLink(code) {
         // what the rival did since our copy (all of it, the first time) is replayed step by step
         const from = got.from;
         session = new Session(record.setup, record.answers.slice(0, from));
-        replay = { frames: [], logStart: session.state.log.length };
+        // a first step with the board as it was: the map is on screen (for the scenes) and every move animates from there
+        const logStart = session.state.log.length;
+        replay = { frames: [{ beat: { kind: 'received' }, logLen: logStart, state: structuredClone({ ...session.state, log: [], pending: null }) }], logStart };
         for (const a of record.answers.slice(from)) {
             session.act(a, { capture: true });
             replay.frames.push(...session.frames);
