@@ -104,6 +104,7 @@ Unidades (`units.json`):
   - **Francés:** +1 cubo al llegar a 5 bajas británicas y +2 al llegar a 10.
   - **Británico:** +1 al llegar a 4 bajas francesas, +2 a las 8 y +3 a las 12.
 - Una unidad sin bloques queda **destruida**, salvo la Reserva. Una unidad eliminada no vuelve ni recibe refuerzos.
+- **Las bajas sobrantes se pierden:** si un resultado pide retirar más bloques de los que le quedan a la unidad, retira los que tiene y queda destruida; el rival solo apunta los bloques retirados, y la moral que debía perder esa unidad ya no se aplica. En una plaza, las bajas que no puede absorber ningún defensor también se pierden [D-53].
 
 ## 5. Turno
 
@@ -324,7 +325,7 @@ Reglas de la v1.6c (§7), resumidas:
 
 ## 14. Decisiones para la versión digital
 
-Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-19 y de D-46 a D-52, 2026-10-24); el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
+Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-19, de D-46 a D-52 y D-53, 2026-10-24); el resto son propuestas pendientes de revisar. Si una partida de prueba aconseja cambiar alguna, se anota aquí con la fecha.
 
 | Id | Hueco o conflicto | Decisión |
 |---|---|---|
@@ -376,6 +377,7 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-
 | D-50 | Orden en una ventana de tácticas | ✔ Por turnos, carta a carta, empezando por el jugador activo, hasta que los dos pasan seguidos (así se puede responder a lo que juega el otro). Las cartas de «en cualquier momento» se ofrecen en todas las ventanas, también antes de un test de moral y tras sufrir bajas; el test usa la moral que tenga la unidad al tirar |
 | D-51 | *Reorganización*, *Improvisación*: «cualquier unidad» | ✔ Unidades propias. *Improvisación* deja al menos 1 punto a la que cede |
 | D-52 | *Recapacitando* | ✔ Cuenta como la compra del turno: después no se puede comprar del Mercado ni se descarta la carta de la derecha |
+| D-53 | Más bajas que bloques le quedan a la unidad | ✔ (2026-10-24) La v1.6c no lo dice. Las sobrantes se pierden: la unidad retira lo que tiene y queda destruida, el rival solo apunta los bloques retirados (el contador cuenta fichas, §3.5) y su pérdida de moral pendiente no se aplica. En una plaza, igual con lo que no absorba ningún defensor |
 
 ## 15. Ideas de la v2.1 (no forman parte de las reglas)
 

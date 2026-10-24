@@ -223,6 +223,14 @@ test('reserveActivation: block pays with a block that goes to the casualty track
     assert.equal(s.state.players.french.casualties, 1);
 });
 
+test('more casualties than blocks left: the rest are lost, and so is the pending morale [D-53]', () => {
+    const s = game({ ...hillScenario({ dice: [6, 6, 6, 6, 5, 5] }), units: { hill: { blocks: 1, morale: 6 } } });
+    delabordeHitsHill(s);
+    const hill = s.state.units.hill;
+    assert.deepEqual([hill.status, hill.blocks, hill.morale], ['destroyed', 0, 6]);
+    assert.equal(s.state.players.french.casualties, 1, 'only the block removed goes to the track');
+});
+
 test('a second Division lost ends the game [§1, D-27]', () => {
     const s = game({ ...hillScenario({ dice: [6, 6, 1, 2, 3, 4] }), units: { hill: { blocks: 1 }, paget: { status: 'routed', blocks: 0 } } });
     delabordeHitsHill(s);
