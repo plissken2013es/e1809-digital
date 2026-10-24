@@ -7,9 +7,10 @@
 // guns and its target does not answer (its dice ignore 1s and 2s). A place
 // that changes hands gets its own short scene next: the flag comes down and
 // the other goes up. Everything is drawn at 1× on a canvas scaled up with
-// pixelated rendering; a click or Enter skips it. The sounds are W1815's too
-// (audio.js): a battle cry, muskets, guns, a shout when men run, and the cheer
-// of whoever takes a place.
+// pixelated rendering; a click or Enter skips it. A unit routed by a failed
+// morale test gets a panel of its own with every man running off. The sounds
+// are W1815's too (audio.js): a battle cry, muskets, guns and the cheer of
+// whoever takes a place.
 
 import { h, loadImage } from './dom.js';
 import { UNITS, LOCATIONS } from '../engine/index.js';
@@ -24,6 +25,8 @@ const MAX_SOLDIERS = 15;
 /** Timeline of a combat (ms): walk in, fire, casualties, flight, end. */
 const T = { walk: 650, fire: 850, deaths: [1100, 2500], flee: [1900, 2800], ceasefire: 3100, end: 3500, fade: 280 };
 const CAPTURE_MS = 2600;
+/** Timeline of a rout (ms): the men break and run. */
+const ROUT = { flee: [450, 1300], end: 2600 };
 
 // Background of each panel: the place for its garrison, else the field of each side.
 const BG = { elvina: 2, palavea: 3, french: 1, british: 8, artilleria: 9 };
@@ -108,6 +111,11 @@ class Sprite {
  */
 export function playCombat(host, scene) {
     return play(host, (imgs) => combatStage(imgs, scene));
+}
+
+/** A unit routs after a failed morale test (the engine's rout step): its men run off. */
+export function playRout(host, rout) {
+    return play(host, (imgs) => routStage(imgs, rout));
 }
 
 /** The short scene of a place changing hands: one flag down, the other up. */
@@ -231,11 +239,10 @@ function combatStage(imgs, scene) {
 
     // what happens and when (each event once)
     const events = [{ t: 0, run: () => sfx(SFX.cry, { volume: 0.8 }) }];
-    let shouted = false;
     for (const p of panels) {
         const enemy = enemyOf(p);
-        for (const s of p.dying) events.push({ t: rnd(...T.deaths), run: (t) => die(p, s, t, enemy.artillery) });
-        for (const s of p.fleeing) events.push({ t: rnd(...T.flee), run: (t) => flee(p, s, t) });
+        for (const s of p.dying) events.push({ t: rnd(...T.deaths), run: (t) => die(imgs, p, s, t, enemy.artillery) });
+        for (const s of p.fleeing) events.push({ t: rnd(...T.flee), run: (t) => flee(imgs, p, s, t) });
         if (!p.fires) continue;
         for (const s of p.soldiers ?? p.guns) {
             for (let t = T.fire + rnd(0, 450); t < T.ceasefire; t += p.artillery ? rnd(900, 1400) : rnd(550, 1050)) {
@@ -262,61 +269,82 @@ function combatStage(imgs, scene) {
         p.effects.push(new Sprite(s.x + (p.right ? -26 : 26), s.y - (s.crouched ? 16 : 24) + 8, { flip: p.right }).play(imgs.smoke, SHEETS.smoke, t + 120, null));
     }
 
-    function die(p, s, t, byCannon) {
-        if (s.dead) return;
-        s.dead = true;
-        const [img, sheet] = p.artillery ? [imgs.gunDeath, SHEETS.gunDeath]
-            : [imgs[`${COLOR[p.side]}:death_by_${byCannon ? 'cannon' : 'gunfire'}`], byCannon ? SHEETS.death_by_cannon : SHEETS.death_by_gunfire];
-        s.play(img, sheet, t, [img, sheet, sheet.n - 1]); // stays where he fell
-    }
-
-    function flee(p, s, t) {
-        if (s.dead) return;
-        s.gone = true;
-        if (!shouted) sfx(SFX.flee, { volume: 0.8 });
-        shouted = true;
-        s.play(imgs[`${COLOR[p.side]}:run`], SHEETS.run, t);
-        s.flip = !p.right; // away from the enemy
-        s.flight = { t, x: s.x, vx: p.right ? 0.075 : -0.075 }; // px per ms
-    }
-
     let next = 0;
     return {
         w: PW * 2 + GAP, h: PH, head, ms: T.end,
         draw(ctx, t) {
             while (next < events.length && events[next].t <= t) events[next++].run(t);
             ctx.clearRect(0, 0, PW * 2 + GAP, PH);
-            panels.forEach((p, i) => {
-                const ox = i * (PW + GAP);
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(ox, 0, PW, PH);
-                ctx.clip();
-                ctx.drawImage(imgs[`bg${p.bg}`], ox, 0);
-                for (const s of p.sprites) {
-                    // walking in to their posts, then standing (or crouched) until they fire
-                    if (s.post !== undefined && !s.ready) {
-                        const k = Math.min(1, Math.max(0, (t - s.delay) / T.walk));
-                        s.x = s.post + (p.right ? 60 : -60) * (1 - k);
-                        if (k >= 1) {
-                            s.ready = true;
-                            const color = COLOR[p.side];
-                            const crouch = [imgs[`${color}:crouch`], SHEETS.crouch];
-                            if (s.crouched) s.play(...crouch, t, [...crouch, SHEETS.crouch.n - 1]);
-                            else s.play(imgs[`${color}:fire`], SHEETS.fire, -1e9, [imgs[`${color}:walk`], SHEETS.walk, 0]);
-                        }
-                    }
-                    if (s.post === undefined) s.ready = true;
-                    if (s.flight) s.x = s.flight.x + s.flight.vx * (t - s.flight.t);
-                    const pose = s.pose(t);
-                    if (pose) drawSprite(ctx, s, pose, ox);
-                }
-                for (const e of p.effects) {
-                    const pose = e.pose(t);
-                    if (pose) drawSprite(ctx, e, pose, ox);
-                }
-                ctx.restore();
-            });
+            panels.forEach((p, i) => drawPanel(ctx, imgs, p, t, i * (PW + GAP)));
+        },
+    };
+}
+
+function die(imgs, p, s, t, byCannon) {
+    if (s.dead) return;
+    s.dead = true;
+    const [img, sheet] = p.artillery ? [imgs.gunDeath, SHEETS.gunDeath]
+        : [imgs[`${COLOR[p.side]}:death_by_${byCannon ? 'cannon' : 'gunfire'}`], byCannon ? SHEETS.death_by_cannon : SHEETS.death_by_gunfire];
+    s.play(img, sheet, t, [img, sheet, sheet.n - 1]); // stays where he fell
+}
+
+function flee(imgs, p, s, t) {
+    if (s.dead) return;
+    s.gone = true;
+    s.play(imgs[`${COLOR[p.side]}:run`], SHEETS.run, t);
+    s.flip = !p.right; // away from the enemy
+    s.flight = { t, x: s.x, vx: p.right ? 0.075 : -0.075 }; // px per ms
+}
+
+/** One panel at `t`, `ox` pixels from the left of the canvas. */
+function drawPanel(ctx, imgs, p, t, ox) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(ox, 0, PW, PH);
+    ctx.clip();
+    ctx.drawImage(imgs[`bg${p.bg}`], ox, 0);
+    for (const s of p.sprites) {
+        // walking in to their posts, then standing (or crouched) until they fire
+        if (s.post !== undefined && !s.ready) {
+            const k = Math.min(1, Math.max(0, (t - s.delay) / T.walk));
+            s.x = s.post + (p.right ? 60 : -60) * (1 - k);
+            if (k >= 1) {
+                s.ready = true;
+                const color = COLOR[p.side];
+                const crouch = [imgs[`${color}:crouch`], SHEETS.crouch];
+                if (s.crouched) s.play(...crouch, t, [...crouch, SHEETS.crouch.n - 1]);
+                else s.play(imgs[`${color}:fire`], SHEETS.fire, -1e9, [imgs[`${color}:walk`], SHEETS.walk, 0]);
+            }
+        }
+        if (s.post === undefined) s.ready = true;
+        if (s.flight) s.x = s.flight.x + s.flight.vx * (t - s.flight.t);
+        const pose = s.pose(t);
+        if (pose) drawSprite(ctx, s, pose, ox);
+    }
+    for (const e of p.effects) {
+        const pose = e.pose(t);
+        if (pose) drawSprite(ctx, e, pose, ox);
+    }
+    ctx.restore();
+}
+
+// ------------------------------------------------------------------ a unit routs
+
+/** Its panel alone, already in line; every man breaks and runs (the Artillery's guns are abandoned). */
+function routStage(imgs, { unit, side, blocks }) {
+    const p = panel(imgs, side, [{ id: unit, blocks, lost: 0, morale: 0 }], { attacker: false, artilleryFire: false, location: null, moore: false });
+    for (const s of p.soldiers ?? []) s.delay = -T.walk; // no walking in
+    const events = (p.soldiers ?? p.guns)
+        .map((s) => ({ t: rnd(...ROUT.flee), run: (t) => (p.artillery ? die(imgs, p, s, t, false) : flee(imgs, p, s, t)) }))
+        .sort((a, b) => a.t - b.t);
+    const head = h('div.cs-heads.one', null, h(`span.${side === 'french' ? 'fr' : 'gb'}`, null, `¡Desbandada! ${nameOf(unit)}`));
+    let next = 0;
+    return {
+        w: PW, h: PH, head, ms: ROUT.end, cls: 'rout',
+        draw(ctx, t) {
+            while (next < events.length && events[next].t <= t) events[next++].run(t);
+            ctx.clearRect(0, 0, PW, PH);
+            drawPanel(ctx, imgs, p, t, 0);
         },
     };
 }

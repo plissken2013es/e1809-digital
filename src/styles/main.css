@@ -310,6 +310,7 @@ dialog::backdrop { background: #000a; }
     transition: opacity .28s;
 }
 .combat-scene.capture { width: min(24%, 330px); }
+.combat-scene.rout { width: min(22%, 300px); }
 .combat-scene.out { opacity: 0; }
 .combat-scene canvas { display: block; width: 100%; aspect-ratio: var(--ratio); image-rendering: pixelated; border-radius: 3px; }
 .cs-heads { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font: 700 11px/1.2 var(--mono); text-align: center; }
@@ -317,4 +318,4 @@ dialog::backdrop { background: #000a; }
 .cs-heads .fr { color: #9fc0f5; }
 .cs-heads .gb { color: #f5a99f; }
 @keyframes cs-in { from { opacity: 0; transform: translate(-50%, -10px); } }
-@media (max-width: 760px) { .combat-scene { width: 92%; } .combat-scene.capture { width: 60%; } }
+@media (max-width: 760px) { .combat-scene { width: 92%; } .combat-scene.capture, .combat-scene.rout { width: 60%; } }

@@ -63,6 +63,8 @@ export function* moraleTest(g, unitId, value = g.units[unitId].morale) {
     yield* beat(g, 'morale', { unit: unitId, roll, limit, ok });
     if (ok) return true;
     if (yield* trySave(g, unitId)) return true;
+    // the view shows its men running off (combatScene.js) before the unit leaves the board
+    yield* beat(g, 'rout', { unit: unitId, side, blocks: st.blocks });
     eliminate(g, unitId, 'routed');
     return false;
 }

@@ -12,7 +12,7 @@ import { createGreedyBot } from '../ai/greedyBot.js';
 import { createRandomBot } from '../ai/randomBot.js';
 import { BOT_SPEEDS, rulesLink } from './setup.js';
 import { snapshot, animateBoard } from './anim.js';
-import { playCombat, playCapture } from './combatScene.js';
+import { playCombat, playCapture, playRout } from './combatScene.js';
 import { setSound } from './audio.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
@@ -45,6 +45,7 @@ function beatText(b) {
         case 'moore_risk': return `Tirada de riesgo de Moore: ${b.dice[0]} + ${b.dice[1]} contra ${b.track}${b.fell ? ': ¡cae abatido!' : ': sale ileso'}`;
         case 'moore_dead': return 'Muere Sir John Moore';
         case 'rally': return `Arenga de Moore: sale ${b.roll}, ${b.ok ? 'la unidad se salva' : 'no basta'}`;
+        case 'rout': return `¡Desbandada de ${UNITS[b.unit].name}!`;
         default: return b.kind;
     }
 }
@@ -258,7 +259,7 @@ export class GameView {
         this.selection.clear();
         this.opts.save(this.session, this.players);
         const frames = this.session.frames;
-        const shown = frames.filter((f) => (this.ui.dice === 'on' && beatDice(f.beat).length) || this.sceneOf(f.beat));
+        const shown = frames.filter((f) => (this.ui.dice === 'on' && beatDice(f.beat).length) || this.scenesOf(f.beat).length);
         if (this.error || !frames.length) this.render();
         else if (this.ui.replay !== 'off') this.startPlayback(frames, logStart);
         else if (shown.length) this.startPlayback(shown, logStart, { diceOnly: true }); // only the throws and the combat scenes
@@ -282,10 +283,16 @@ export class GameView {
 
     // ------------------------------------------------------------ replay
 
-    /** The combat scene of a step (the results of a combat), if scenes are on. */
-    sceneOf(beat) {
-        const s = beat.kind === 'results' && this.ui.scenes === 'on' ? beat.scene : null;
-        return s && s.attacker.blocks > 0 ? s : null;
+    /**
+     * The scenes a step plays before it is shown, if scenes are on: a combat and the places it
+     * took, one after the other; or a unit routed by a failed morale test.
+     */
+    scenesOf(beat) {
+        if (this.ui.scenes !== 'on') return [];
+        if (beat.kind === 'rout' && beat.blocks > 0) return [(map) => playRout(map, beat)];
+        const s = beat.kind === 'results' ? beat.scene : null;
+        if (!s || s.attacker.blocks === 0) return [];
+        return [(map) => playCombat(map, s), ...s.captured.map((c) => (map) => playCapture(map, c))];
     }
 
     /** diceOnly: no replay asked for, but the dice of these steps are thrown. */
@@ -314,12 +321,12 @@ export class GameView {
             if (this.playback !== pb) return; // skipped meanwhile
         }
         // the combat scene, then a place changing hands: before the step moves the pieces
-        const scene = this.sceneOf(f.beat);
+        const scenes = this.scenesOf(f.beat);
         const map = this.root.querySelector('.map');
-        if (scene && map && pb.staged !== pb.i) {
+        if (scenes.length && map && pb.staged !== pb.i) {
             pb.staged = pb.i;
-            for (const run of [() => playCombat(map, scene), ...scene.captured.map((c) => () => playCapture(map, c))]) {
-                this.stage = run();
+            for (const run of scenes) {
+                this.stage = run(map);
                 await this.stage.done;
                 this.stage = null;
                 if (this.playback !== pb) return;

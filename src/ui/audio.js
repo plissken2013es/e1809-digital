@@ -13,7 +13,6 @@ export const SFX = {
     rifle: ['rifle_01', 'rifle_02', 'rifle_03', 'rifle_04', 'rifle_05', 'rifle_06', 'rifle_07', 'rifle_08'],
     cannon: ['cannon_01', 'cannon_02', 'cannon_03'],
     cry: ['battle_cry_01', 'battle_cry_02', 'battle_cry_03'],
-    flee: ['run_for_your_lives'],
     cheerFrench: ['viv_le_france'],
     cheerBritish: ['for_king_and_country'],
 };
