@@ -362,7 +362,7 @@ Las marcadas **✔** se revisaron y confirmaron con el usuario (2026-10-23 y, D-
 | D-32 | «En cualquier momento» | El motor ofrece las tácticas en puntos fijos (§11.1); no hay interrupciones a mitad de un paso. En cada punto se juega por turnos hasta que los dos pasan (D-50) |
 | D-33 | *Avanzadillas*: «turno enemigo, tras el combate» | Tras una tirada enemiga, antes de aplicarla (después del combate no tendría efecto) |
 | D-34 | Mano inicial | El británico roba 5 y el francés 6; cada uno se queda 3 |
-| D-35 | El reglamento cuenta 15 bloques británicos; el mapa tiene 14 casillas de salida (Hill 3, Bentinck 3, Paget 2, Manningham/Leith 3, Reserva 3) | ✔ Manda el mapa: 14. Nota (2026-10-24): el contador de bajas británicas del borde izquierdo tiene 15 casillas, lo que apoya los 15 del reglamento (el francés tiene 12, sus umbrales) |
+| D-35 | El reglamento cuenta 15 bloques británicos; el mapa tiene 14 casillas de salida (Hill 3, Bentinck 3, Paget 2, Manningham/Leith 3, Reserva 3) | ✔ Manda el mapa: 14. Nota (2026-10-24): el contador de bajas británicas del borde izquierdo tiene 15 casillas, lo que apoya los 15 del reglamento (el francés tiene 12, sus umbrales). El usuario confirma 14 de todos modos |
 | D-36 | *Reorganización*: el PDF de febrero de 2026 dice coste 2 y el render de Tabletopia (10 días posterior) dice 3 | ✔ 3, el más reciente |
 | D-37 | ¿La moral puede superar el máximo? | No |
 | D-38 | Paget | Empieza en #1, donde no combate; su orden 1 lo pasa a #2 sin combate |
