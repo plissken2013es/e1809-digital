@@ -5,6 +5,9 @@
   extracted/images/cards/backs/action_*_digital.png   backs for the Action cards: the printed ones are
                                                   white placeholders. British dark red with Moore, French
                                                   navy with Soult (the 2026 commander art), gold frame.
+  assets/icons/favicon-32.png, favicon-180.png   the tab icon and the phone home-screen icon: «E18 / 09» in
+                                                  gold on dark (Bahnschrift, a Windows font). PNG straight
+                                                  into assets/ (phones want PNG), not through build_assets.
 
 Then python -I tools/build_assets.py makes the WebP copies.
 
@@ -121,8 +124,40 @@ def back(side, spec):
     return out
 
 
+def favicon(size):
+    """«E18» over «09», gold on a dark rounded square; drawn 8 times larger and scaled down."""
+    S = size * 8
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    pad = S * 0.04
+    d.rounded_rectangle((pad, pad, S - pad, S - pad), radius=S * 0.18, fill=(21, 23, 28))
+    inner = S * 0.86
+    y = (S - inner) / 2
+    for text in ("E18", "09"):
+        h = inner / 2
+        best = None
+        for fs in range(4, 400):  # the largest that fits its half
+            f = font("bahnschrift.ttf", fs)
+            try:
+                f.set_variation_by_name("Bold Condensed")
+            except (OSError, AttributeError):
+                pass
+            l, t, r, b = d.textbbox((0, 0), text, font=f)
+            if r - l > inner or b - t > h * 0.92:
+                break
+            best = (f, l, t, r, b)
+        f, l, t, r, b = best
+        d.text(((S - (r - l)) / 2 - l, y + (h - (b - t)) / 2 - t), text, font=f, fill=GOLD)
+        y += h
+    out = ROOT / "assets" / "icons" / f"favicon-{size}.png"
+    img.resize((size, size), Image.LANCZOS).save(out)
+    return out
+
+
 def main():
     print(horse_icon().relative_to(ROOT))
+    for size in (32, 180):
+        print(favicon(size).relative_to(ROOT))
     for side, spec in SIDES.items():
         print(back(side, spec).relative_to(ROOT))
 
