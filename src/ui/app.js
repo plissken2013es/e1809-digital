@@ -145,8 +145,8 @@ function showSetup() {
             const ui = { ...prefs.ui, speed };
             store.set(PREFS_KEY, { ...prefs, setup, players, speed, ui });
             const remote = Object.keys(players).find((s) => players[s] === 'mail');
-            // a correspondence game: an id for its links, this browser plays the other side
-            const s = new Session(remote ? { ...setup, match: crypto.randomUUID().slice(0, 8) } : setup);
+            // a correspondence game: an id for its links (getRandomValues: randomUUID needs https), this browser plays the other side
+            const s = new Session(remote ? { ...setup, match: [...crypto.getRandomValues(new Uint8Array(4))].map((b) => b.toString(16).padStart(2, '0')).join('') } : setup);
             if (remote) rememberSide(s.setup.match, enemyOf(remote));
             save(s, players);
             play(s, players, ui);
