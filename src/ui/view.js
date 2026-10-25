@@ -33,6 +33,8 @@ const SIDES = ['french', 'british'];
 const CODE = { french: 'fr', british: 'gb' };
 const SIDE_TITLE = { french: 'Francés', british: 'Británico' };
 
+/** A touch screen: cards are enlarged with a long press (there is no hover). */
+const TOUCH = matchMedia('(pointer: coarse)');
 const at = ([x, y]) => ({ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` });
 const center = (b) => [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
 
@@ -181,13 +183,16 @@ export class GameView {
         this.menuOpen = false;
         this.asked = null; // the last decision of ours shown: a new one brings the 'play' tab back
         this.onScreen = () => this.render(); // turning the phone or entering fullscreen changes the layout
+        // no browser menu («save image»…) on the game's images: a long press is for reading the cards
+        this.onMenu = (e) => e.target.closest?.('img, .map') && e.preventDefault();
+        root.addEventListener('contextmenu', this.onMenu);
         phone.addEventListener('change', this.onScreen);
         document.addEventListener('fullscreenchange', this.onScreen);
         /** Live (app.js liveFor): the connection, and the rival's answers waiting for the replay of the previous one. */
         this.live = opts.live ?? null;
         this.inbox = [];
         this.preview = h('div.preview');
-        this.dialog = h('dialog');
+        this.dialog = h('dialog', { onclick: (e) => this.closeOnBackdrop(e) });
         document.body.append(this.preview, this.dialog);
         this.onKey = (e) => {
             if (this.stage && ['Enter', 'Escape', ' '].includes(e.key) && !e.target.closest('input, textarea, select')) {
@@ -228,6 +233,7 @@ export class GameView {
         this.tray?.then((t) => t?.destroy());
         document.removeEventListener('keydown', this.onKey);
         phone.removeEventListener('change', this.onScreen);
+        this.root.removeEventListener('contextmenu', this.onMenu);
         document.removeEventListener('fullscreenchange', this.onScreen);
         this.preview.remove();
         this.dialog.remove();
@@ -676,13 +682,50 @@ export class GameView {
         return el;
     }
 
+    /** What has a card: a preview on hover; enlarged with a long press (touch) or the right button, without choosing it. */
     hover(el, ref) {
         const img = refImage(ref);
         if (!img) return el;
         el.addEventListener('mouseenter', (e) => this.showPreview(e, img));
         el.addEventListener('mousemove', (e) => this.placePreview(e));
         el.addEventListener('mouseleave', () => this.preview.classList.remove('show'));
+        this.longPress(el, () => this.zoomRef(ref));
         return el;
+    }
+
+    /**
+     * A long press (touch, about half a second) runs `fn` and the click that follows does not count:
+     * on a phone a card is read before it is chosen. The browser's own menu (long press, right click)
+     * runs `fn` instead.
+     */
+    longPress(el, fn) {
+        let timer = null;
+        let at = null;
+        let held = false;
+        const cancel = () => clearTimeout(timer);
+        el.addEventListener('pointerdown', (e) => {
+            held = false;
+            if (e.pointerType === 'mouse') return;
+            at = [e.clientX, e.clientY];
+            cancel();
+            timer = setTimeout(() => {
+                held = true;
+                fn();
+            }, 450);
+        });
+        el.addEventListener('pointermove', (e) => at && Math.hypot(e.clientX - at[0], e.clientY - at[1]) > 10 && cancel());
+        for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, cancel);
+        // capture: before the element's own click (choose, mark), which a long press does not do
+        el.addEventListener('click', (e) => {
+            if (!held) return;
+            held = false;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }, true);
+        el.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (!held) fn();
+        });
     }
 
     showPreview(e, img) {
@@ -872,7 +915,7 @@ export class GameView {
                 })));
             } else {
                 const n = this.selection.size;
-                out.push(h('p.muted', null, `Elige ${p.min === p.max ? p.min : `de ${p.min} a ${p.max}`} (${n} marcadas).`));
+                out.push(h('p.muted', null, `Elige ${p.min === p.max ? p.min : `de ${p.min} a ${p.max}`} (${n} marcadas).`, TOUCH.matches && ' Mantén pulsada una carta para verla en grande.'));
                 const toggle = (id) => {
                     if (this.selection.has(id)) this.selection.delete(id);
                     else this.selection.add(id);
@@ -1099,6 +1142,11 @@ export class GameView {
             h('div.dialog-body', null, body),
         );
         if (!this.dialog.open) this.dialog.showModal();
+    }
+
+    /** A tap outside the dialog (on its backdrop) closes it too. */
+    closeOnBackdrop(e) {
+        if (e.target === this.dialog) this.dialog.close();
     }
 
     zoomRef(ref) {

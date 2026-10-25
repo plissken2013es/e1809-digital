@@ -344,6 +344,10 @@ dialog::backdrop { background: #000a; }
 .topbar .menu { display: contents; } /* the desktop: its controls stay inline */
 .topbar .fs { font-size: 14px; line-height: 1; }
 
+/* the browser's own long-press menu and text selection are off on the board and the cards
+   (a long press enlarges the card: view.js longPress) */
+.game img, .game .card, .game .map, .game .unit-row, .game .opts button, dialog img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+
 /* ------------------------------------------------------------ phone held upright: turn it (screen.js) */
 
 .rotate { display: none; }
@@ -407,7 +411,10 @@ dialog::backdrop { background: #000a; }
     .combat-scene.capture, .combat-scene.rout { width: 42%; }
     .toast { bottom: 10px; font-size: 13px; padding: 7px 12px; }
     dialog { max-height: 94vh; max-height: 94dvh; }
-    .zoom-img { max-height: 78dvh; width: auto; }
+    .dialog-head { padding: 4px 10px; }
+    .dialog-head h2 { font-size: 14px; }
+    .dialog-body { padding: 6px 10px; }
+    .zoom-img { max-height: calc(94dvh - 64px); width: auto; margin: 0 auto; }
     /* the setup screen: more compact, "Start" closer */
     .setup { padding: 8px; place-items: start center; }
     .setup-card { padding: 12px 16px; }
