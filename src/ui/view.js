@@ -682,14 +682,26 @@ export class GameView {
         return el;
     }
 
-    /** What has a card: a preview on hover; enlarged with a long press (touch) or the right button, without choosing it. */
+    /**
+     * What has a card: a preview on hover (a real mouse only: a finger's tap also sends mouse events,
+     * and on a phone the preview would cover the screen); enlarged with a long press (touch) or the
+     * right button, without choosing it.
+     */
     hover(el, ref) {
         const img = refImage(ref);
         if (!img) return el;
-        el.addEventListener('mouseenter', (e) => this.showPreview(e, img));
-        el.addEventListener('mousemove', (e) => this.placePreview(e));
-        el.addEventListener('mouseleave', () => this.preview.classList.remove('show'));
+        const mouse = (e) => e.pointerType === 'mouse';
+        el.addEventListener('pointerenter', (e) => mouse(e) && this.showPreview(e, img));
+        el.addEventListener('pointermove', (e) => mouse(e) && this.placePreview(e));
+        el.addEventListener('pointerleave', () => this.preview.classList.remove('show'));
         this.longPress(el, () => this.zoomRef(ref));
+        return el;
+    }
+
+    /** A card that cannot be chosen now: a tap (or click) enlarges it. */
+    tapZoom(el, ref) {
+        el.addEventListener('click', () => this.zoomRef(ref));
+        el.classList.add('zoomable');
         return el;
     }
 
@@ -869,12 +881,12 @@ export class GameView {
             h('h2', null, h('span.gb', null, 'Sir John Moore'), h('small', null, status)),
             h('div.path', { title: 'Senda del Sacrificio: por encima de 2, cada avance pide una tirada de riesgo' }, Array.from({ length: 12 }, (_, i) => h(`b${i + 1 === m.track ? '.on' : ''}${i + 1 > 2 ? '.risk' : ''}`, null, i + 1))),
         );
-        this.hover(moore, 'moore');
+        this.tapZoom(this.hover(moore, 'moore'), 'moore');
         const soult = h(
             'section.panel', null,
             h('h2', null, h('span.fr', null, 'Mariscal Soult'), h('small', null, g.soult.used ? 'agotado' : 'disponible: doble activación o salvar de la desbandada (un uso)')),
         );
-        this.hover(soult, 'soult');
+        this.tapZoom(this.hover(soult, 'soult'), 'soult');
         return h('div.commanders', null, soult, moore);
     }
 
@@ -1086,6 +1098,7 @@ export class GameView {
             const opts = this.optionsFor(id);
             const el = h(`div.card${opts.length === 1 ? '.option' : ''}`, { title: cardLabel(id) }, h('img', { src: ACTIONS[id].image, alt: cardLabel(id) }), givesBonus(p, id) && h('span.badge', { title: streakHint(p) }, '+2'));
             if (opts.length === 1) el.addEventListener('click', () => this.act(opts[0].id));
+            else this.tapZoom(el, id);
             return this.hover(el, id);
         });
         const limbo = visible && p.limbo.length > 0 && h('p.muted', null, `En juego: ${p.limbo.map(cardLabel).join(', ')}`);
@@ -1094,6 +1107,7 @@ export class GameView {
             const el = h(`div.card.tactic${this.optionsFor(id).length === 1 ? '.option' : ''}`, null, h('img', { src: TACTICS[id].image, alt: TACTICS[id].name }), TACTICS[id].permanent && h('span.badge', null, 'P'), locked && h('span.locked', null, 'este turno no'));
             const opts = this.optionsFor(id);
             if (opts.length === 1 && pend?.kind === 'tactic') el.addEventListener('click', () => this.act(opts[0].id));
+            else this.tapZoom(el, id);
             return this.hover(el, id);
         });
         const who = this.mail
@@ -1120,6 +1134,7 @@ export class GameView {
             const human = this.g.pending && !this.isBot(this.g.pending.side);
             const el = h(`div.card.tactic${opts.length && human ? '.option' : ''}`, null, h('img', { src: TACTICS[slot.id].image, alt: TACTICS[slot.id].name }), slot.cubes > 0 && h('span.slot-cubes', null, `+${slot.cubes}`));
             if (opts.length && human) el.addEventListener('click', () => this.act(opts[0].id));
+            else this.tapZoom(el, slot.id);
             return this.hover(el, slot.id);
         });
         return h(
@@ -1149,14 +1164,30 @@ export class GameView {
         if (e.target === this.dialog) this.dialog.close();
     }
 
-    zoomRef(ref) {
+    /** A card enlarged in the dialog; back: a button to return to what the dialog showed (a list of cards). */
+    zoomRef(ref, back = null) {
         const img = refImage(ref);
         if (!img) return;
-        this.openDialog(UNITS[ref]?.name ?? COMMANDERS[ref]?.name ?? TACTICS[ref]?.name ?? cardLabel(ref), h('img.zoom-img', { src: img.src, alt: '' }));
+        this.openDialog(UNITS[ref]?.name ?? COMMANDERS[ref]?.name ?? TACTICS[ref]?.name ?? cardLabel(ref),
+            back && h('button.small.back', { onclick: back.go }, `← ${back.label}`),
+            h('img.zoom-img', { src: img.src, alt: '' }));
     }
 
+    /** A pile of tactics (the Market's discard): a tap enlarges one there, with a way back to the pile. */
     showTactics(title, ids) {
-        this.openDialog(title, h('div.cards', null, [...ids].reverse().map((id) => this.hover(h('div.card.tactic', null, h('img', { src: TACTICS[id].image, alt: TACTICS[id].name })), id))));
+        const back = { label: `Volver: ${title.toLowerCase()}`, go: () => this.showTactics(title, ids) };
+        const card = (id) => {
+            const el = h('div.card.tactic.zoomable', { onclick: () => this.zoomRef(id, back) }, h('img', { src: TACTICS[id].image, alt: TACTICS[id].name }));
+            el.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && this.showPreview(e, refImage(id)));
+            el.addEventListener('pointermove', (e) => e.pointerType === 'mouse' && this.placePreview(e));
+            el.addEventListener('pointerleave', () => this.preview.classList.remove('show'));
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.zoomRef(id, back);
+            });
+            return el;
+        };
+        this.openDialog(title, h('div.cards', null, [...ids].reverse().map(card)));
     }
 
     async copyCode() {
