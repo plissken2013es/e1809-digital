@@ -288,6 +288,7 @@ dialog::backdrop { background: #000a; }
 .trail { font: 12px var(--mono); max-height: 50vh; overflow: auto; display: grid; gap: 2px; }
 .trail button { text-align: left; padding: 2px 6px; font: 12px var(--mono); }
 .zoom-img { max-width: min(900px, 90vw); }
+.dialog-body textarea { min-width: min(520px, 70vw); } /* a code to copy: wide enough to see what it is */
 
 /* ------------------------------------------------------------ narrow screens */
 
