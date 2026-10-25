@@ -4,6 +4,7 @@
 
 import { h } from './dom.js';
 import { DEFAULT_SETUP, DEFAULT_RULES } from '../engine/index.js';
+import { fullscreenButton } from './screen.js';
 
 export const PLAYERS = [['human', 'Humano'], ['greedy', 'Bot codicioso'], ['random', 'Bot aleatorio'], ['mail', 'Rival por correspondencia'], ['live', 'Rival en directo']];
 export const BOT_SPEEDS = [['fast', 'Rápida'], ['normal', 'Normal'], ['slow', 'Lenta'], ['step', 'Paso a paso (botón)']];
@@ -132,7 +133,7 @@ export function renderSetup(root, { prefs, saved, mail = [], onStart, onContinue
             }, 'Cargar y repetir')),
         ),
         err,
-        h('div.actions', null, h('button.primary', { type: 'submit' }, 'Empezar la batalla'), h('button', { type: 'button', onclick: () => (seed.value = String(Math.floor(Math.random() * 1e6))) }, 'Semilla al azar'), rulesLink()),
+        h('div.actions', null, h('button.primary', { type: 'submit' }, 'Empezar la batalla'), h('button', { type: 'button', onclick: () => (seed.value = String(Math.floor(Math.random() * 1e6))) }, 'Semilla al azar'), rulesLink(), fullscreenButton('')),
     );
     root.replaceChildren(h('div.setup', null, form));
 }

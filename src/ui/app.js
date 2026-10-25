@@ -6,6 +6,7 @@ import { GameView } from './view.js';
 import { preloadAll } from './preload.js';
 import { receive, isPrefix } from './mail.js';
 import { LiveLink, LiveSync, INVITE, REPLY } from './live.js';
+import { rotateNotice } from './screen.js';
 
 const BUILD = '2026-10-24';
 const SAVE_KEY = 'e18-save';
@@ -265,6 +266,9 @@ const follow = (code) => (code.startsWith(INVITE) ? openInvite(code) : openLink(
 });
 // a link opened while the game is already open
 addEventListener('hashchange', () => linked() && follow(linked()));
+
+// phones held upright: a notice to turn them (main.css shows it only then)
+document.body.append(rotateNotice());
 
 // everything loads first (images, combat scenes, sounds, 3D dice), then the menu or the game of the link
 preloadAll(root).then(() => (linked() ? follow(linked()) : showSetup()));

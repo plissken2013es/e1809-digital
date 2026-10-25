@@ -15,6 +15,7 @@ import { snapshot, animateBoard } from './anim.js';
 import { playCombat, playCapture, playRout } from './combatScene.js';
 import { setSound } from './audio.js';
 import { emptyWindow } from './mail.js';
+import { phone, fullscreenButton } from './screen.js';
 
 const BOT_MS = { fast: 80, normal: 450, slow: 1300, step: null };
 /** Replay of what happened in each answer (Session frames): ms per step; step: wait for "Siguiente"; off: no replay. */
@@ -175,6 +176,13 @@ export class GameView {
         /** Correspondence: the rival's side (it decides elsewhere) and what can no longer be undone (received or sent). */
         this.mail = SIDES.find((s) => this.isRemote(s)) ?? null;
         this.mailFloor = session.answers.length;
+        /** Phone in landscape (screen.js): the right column's tab ('play', 'army', 'market', 'log') and the ☰ menu. */
+        this.tab = 'play';
+        this.menuOpen = false;
+        this.asked = null; // the last decision of ours shown: a new one brings the 'play' tab back
+        this.onScreen = () => this.render(); // turning the phone or entering fullscreen changes the layout
+        phone.addEventListener('change', this.onScreen);
+        document.addEventListener('fullscreenchange', this.onScreen);
         /** Live (app.js liveFor): the connection, and the rival's answers waiting for the replay of the previous one. */
         this.live = opts.live ?? null;
         this.inbox = [];
@@ -219,6 +227,8 @@ export class GameView {
         this.stopPlayback();
         this.tray?.then((t) => t?.destroy());
         document.removeEventListener('keydown', this.onKey);
+        phone.removeEventListener('change', this.onScreen);
+        document.removeEventListener('fullscreenchange', this.onScreen);
         this.preview.remove();
         this.dialog.remove();
     }
@@ -522,12 +532,15 @@ export class GameView {
             this.root.replaceChildren(this.handoffScreen());
             return;
         }
-        this.root.replaceChildren(h(
-            'div.game', null,
-            this.topbar(),
-            h('main.main', null, this.mapView(), this.armies(), this.commanders()),
-            h('aside.side', null, this.decisionPanel(), h('div.side-scroll', null, this.playersPanel(), this.marketPanel(), this.logPanel())),
-        ));
+        if (phone.matches) this.root.replaceChildren(this.phoneLayout());
+        else {
+            this.root.replaceChildren(h(
+                'div.game', null,
+                this.topbar(),
+                h('main.main', null, this.mapView(), this.armies(), this.commanders()),
+                h('aside.side', null, this.decisionPanel(), h('div.side-scroll', null, this.playersPanel(), this.marketPanel(), this.logPanel())),
+            ));
+        }
         const log = this.root.querySelector('.log');
         if (log && atBottom) log.scrollTop = log.scrollHeight;
         // what changed since the last state drawn moves on the map (not after undoing or rewinding)
@@ -536,6 +549,36 @@ export class GameView {
         this.shown = shown;
         this.quiet = false;
         this.scheduleNext();
+    }
+
+    /** Phone in landscape: the map on the left, the rest in a column with tabs on the right. */
+    phoneLayout() {
+        const p = this.session.state.pending;
+        // a new decision of ours brings back the tab where it is answered
+        if (p && p !== this.asked && !this.playback && !this.isBot(p.side) && !this.isRemote(p.side)) {
+            this.asked = p;
+            this.tab = 'play';
+        }
+        const TABS = [['play', 'Partida'], ['army', 'Ejércitos'], ['market', 'Mercado'], ['log', 'Registro']];
+        const content = {
+            play: () => [this.decisionPanel(), this.playersPanel()],
+            army: () => [this.armies(), this.commanders()],
+            market: () => [this.marketPanel()],
+            log: () => [this.logPanel()],
+        }[this.tab]();
+        return h(
+            'div.game.phone', null,
+            this.topbar(),
+            h('main.main', null, this.mapView()),
+            h('aside.side', null,
+                h('nav.tabs', null, TABS.map(([id, label]) => h(`button${id === this.tab ? '.on' : ''}`, {
+                    onclick: () => {
+                        this.tab = id;
+                        this.render();
+                    },
+                }, label))),
+                h('div.side-scroll', null, content)),
+        );
     }
 
     handoffScreen() {
@@ -567,22 +610,33 @@ export class GameView {
         return h(
             'header.topbar', null,
             h('span.brand', null, 'Elviña 1809'),
-            h('span.pill', null, `Ronda ${g.roundNo} · turno ${g.turnNo}`),
-            g.turnNo > 0 && h(`span.pill.${CODE[g.active]}`, null, `Turno ${SIDE_TITLE[g.active].toLowerCase()}`),
-            ...SIDES.map((s) => h(`span.pill.${CODE[s]}`, { title: `Cubos de Inercia del ${SIDE_NAME[s]} · ${streakHint(g.players[s])}`, dataset: { side: s } }, `${SIDE_TITLE[s]}: ${g.players[s].cubes} cubos `, streakView(g.players[s], 4))),
-            h('span.pill.gold', { title: 'Reserva común de cubos de Inercia' }, `Reserva ${g.supply ?? '∞'}`),
-            h('span.pill', { title: 'Divisiones eliminadas (2 = derrota)' }, `Bajas de División: FR ${eliminatedOf(g, 'french').length} · GB ${eliminatedOf(g, 'british').length}`),
+            h('span.pill', null, h('span.long', null, 'Ronda '), h('span.short', null, 'R'), `${g.roundNo} · `, h('span.long', null, 'turno '), h('span.short', null, 'T'), g.turnNo),
+            g.turnNo > 0 && h(`span.pill.extra.${CODE[g.active]}`, null, `Turno ${SIDE_TITLE[g.active].toLowerCase()}`),
+            ...SIDES.map((s) => h(`span.pill.${CODE[s]}${g.turnNo > 0 && g.active === s ? '.active' : ''}`, { title: `Cubos de Inercia del ${SIDE_NAME[s]} · ${streakHint(g.players[s])}`, dataset: { side: s } },
+                h('span.long', null, `${SIDE_TITLE[s]}: `), h('span.short', null, `${CODE[s].toUpperCase()} `), `${g.players[s].cubes}`, h('span.long', null, ' cubos '), h('span.short', null, '▪'), streakView(g.players[s], 4))),
+            h('span.pill.gold.extra', { title: 'Reserva común de cubos de Inercia' }, `Reserva ${g.supply ?? '∞'}`),
+            h('span.pill.extra', { title: 'Divisiones eliminadas (2 = derrota)' }, `Bajas de División: FR ${eliminatedOf(g, 'french').length} · GB ${eliminatedOf(g, 'british').length}`),
             h('span.spacer'),
             this.mail && h(`span.pill.mail${this.live && !this.online ? '.off' : ''}`, { title: this.live ? 'Partida en directo: cada jugada llega al momento mientras estéis conectados' : 'Cada vez que le toque al rival, envíale el enlace de la partida' },
                 `${this.live ? `En directo · ${this.online ? 'conectado' : 'sin conexión'}` : 'Por correspondencia'} · llevas el ${SIDE_NAME[enemyOf(this.mail)]}`),
-            h('button.small', { onclick: () => this.undo(), disabled: !this.canUndo(), title: 'Ctrl+Z' }, '↶ Deshacer'),
+            h('button.small', { onclick: () => this.undo(), disabled: !this.canUndo(), title: 'Deshacer (Ctrl+Z)' }, '↶', h('span.long', null, ' Deshacer')),
             botsExist && h('button.small', {
                 onclick: () => {
                     this.paused = !this.paused;
                     this.render();
                 },
-            }, this.paused ? '▶ Seguir bots' : '⏸ Pausar bots'),
+                title: this.paused ? 'Seguir bots' : 'Pausar bots',
+            }, this.paused ? '▶' : '⏸', h('span.long', null, this.paused ? ' Seguir bots' : ' Pausar bots')),
             botTurn && !this.playback && (this.paused || this.ui.speed === 'step') && h('button.small', { onclick: () => this.botStep() }, 'Paso del bot'),
+            h('button.small.menu-btn', {
+                onclick: () => {
+                    this.menuOpen = !this.menuOpen;
+                    this.render();
+                },
+                title: 'Opciones',
+            }, this.menuOpen ? '✕' : '☰'),
+            fullscreenButton(),
+            h(`div.menu${this.menuOpen ? '.open' : ''}`, null,
             botsExist && speedSel,
             sel('replay', REPLAYS, 'Cómo se repite lo que pasa en cada decisión'),
             sel('auto', AUTO, 'Preguntas rutinarias que se responden solas'),
@@ -592,7 +646,7 @@ export class GameView {
             h('button.small', { onclick: () => this.copyCode() }, 'Copiar código'),
             rulesLink('.small'),
             !this.mail && h('button.small', { onclick: () => this.openDebug() }, 'Depuración'), // it shows hidden cards
-            h('button.small', { onclick: () => this.opts.onExit() }, 'Menú'),
+            h('button.small', { onclick: () => this.opts.onExit() }, 'Menú')),
         );
     }
 

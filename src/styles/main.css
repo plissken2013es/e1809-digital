@@ -337,3 +337,84 @@ dialog::backdrop { background: #000a; }
 .cs-heads .gb { color: #f5a99f; }
 @keyframes cs-in { from { opacity: 0; transform: translate(-50%, -10px); } }
 @media (max-width: 760px) { .combat-scene { width: 92%; } .combat-scene.capture, .combat-scene.rout { width: 60%; } }
+
+/* ------------------------------------------------------------ top bar: short labels and the ☰ menu (phones) */
+
+.topbar .short, .topbar .menu-btn { display: none; }
+.topbar .menu { display: contents; } /* the desktop: its controls stay inline */
+.topbar .fs { font-size: 14px; line-height: 1; }
+
+/* ------------------------------------------------------------ phone held upright: turn it (screen.js) */
+
+.rotate { display: none; }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 600px) {
+    .rotate { display: grid; position: fixed; inset: 0; z-index: 1000; place-content: center; justify-items: center; gap: 10px; padding: 24px; text-align: center; background: radial-gradient(ellipse at center, #1f2a3d 0%, var(--bg) 70%); }
+    .rotate-icon { font-size: 64px; animation: turn 2.4s ease-in-out infinite; }
+    .rotate-title { margin: 0; font: 800 26px var(--serif); }
+    .rotate .hint { font-size: 14px; }
+    #app, .toast, dialog { display: none !important; }
+}
+@keyframes turn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+
+/* ------------------------------------------------------------ phone in landscape (screen.js PHONE)
+   One screen: the top bar on one line (the rest in ☰), the map on the left as tall as the screen,
+   and a column on the right with tabs: Partida (decision, hands), Ejércitos, Mercado, Registro.
+   The desktop does not change. */
+@media (orientation: landscape) and (max-height: 520px) {
+    html:has(.game), body:has(.game) { height: 100%; overflow: hidden; }
+    .game { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: 100vh; height: 100dvh; padding-bottom: 0; }
+    .topbar { flex-wrap: nowrap; gap: 5px; padding: 3px 6px; position: relative; overflow: visible; }
+    .topbar .brand, .topbar .extra, .topbar .long, .topbar .pill .streak { display: none; }
+    .topbar .short, .topbar .menu-btn { display: inline; }
+    .topbar .pill { font-size: 11px; padding: 3px 6px; }
+    .topbar .pill.active { box-shadow: 0 0 0 2px var(--gold); }
+    .topbar .pill.mail { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; }
+    .topbar button.small { padding: 2px 8px; font-size: 14px; line-height: 20px; }
+    .topbar .menu { display: none; }
+    .topbar .menu.open { display: flex; flex-direction: column; align-items: stretch; gap: 6px; position: absolute; right: 6px; top: 100%; z-index: 80; width: min(280px, 60vw);
+        max-height: calc(100dvh - 40px); overflow: auto; padding: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px #000c; }
+    .topbar .menu.open > * { width: 100%; }
+    .main { padding: 4px; overflow: hidden; gap: 0; }
+    .map { width: auto; height: calc(100dvh - 40px); max-width: 64vw; max-height: calc((64vw) * 4960 / 7016); border-radius: 4px; }
+    .map .unit-tag { font-size: 8px; padding: 1px 3px; }
+    .map .unit-tag .d6 { min-width: 1.3em; height: 1.3em; }
+    .side { border-left: 1px solid var(--line); border-top: 0; grid-template-rows: auto minmax(0, 1fr); min-height: 0; }
+    .tabs { display: flex; gap: 2px; padding: 4px 4px 0; border-bottom: 1px solid var(--line); }
+    .tabs button { flex: 1; padding: 4px 2px; font-size: 12px; border-radius: 6px 6px 0 0; border-bottom: 0; background: transparent; color: var(--muted); }
+    .tabs button.on { background: var(--surface-2); color: var(--text); border-color: var(--gold); }
+    .side-scroll { padding: 6px; gap: 8px; }
+    /* the decision is part of the column, not the bottom sheet of narrow screens */
+    .decision { position: static; max-height: none; overflow: visible; padding: 6px 4px; border: 0; box-shadow: none; }
+    .prompt { font-size: 13.5px; margin-bottom: 6px; }
+    .opts { gap: 4px; }
+    .opts button { padding: 5px 8px; font-size: 12.5px; }
+    .who { font-size: 11px; padding: 3px 7px; margin-bottom: 5px; }
+    .panel { padding: 6px 8px; }
+    .panel h2 { font-size: 13.5px; margin-bottom: 5px; }
+    .card { width: 58px; }
+    .card.tactic { width: 66px; }
+    .hand-hidden img { width: 46px; }
+    .armies, .commanders { grid-template-columns: 1fr; gap: 6px; }
+    .army { gap: 4px; }
+    .unit-row { grid-template-columns: 84px minmax(0, 1fr) auto; gap: 5px; padding: 3px 6px; }
+    .unit-row .name { font-size: 12.5px; }
+    .morale b { width: 14px; height: 14px; font-size: 9px; }
+    .path b { width: 16px; height: 16px; font-size: 9px; }
+    .log { max-height: none; font-size: 12px; }
+    .summary .log { max-height: 120px; }
+    .dice .die { width: 28px; height: 28px; font-size: 15px; }
+    .combat-scene { width: 74%; }
+    .combat-scene.capture, .combat-scene.rout { width: 42%; }
+    .toast { bottom: 10px; font-size: 13px; padding: 7px 12px; }
+    dialog { max-height: 94vh; max-height: 94dvh; }
+    .zoom-img { max-height: 78dvh; width: auto; }
+    /* the setup screen: more compact, "Start" closer */
+    .setup { padding: 8px; place-items: start center; }
+    .setup-card { padding: 12px 16px; }
+    .setup-head { grid-template-columns: 70px 1fr; gap: 12px; margin-bottom: 8px; }
+    .title { font-size: 24px; }
+    .lede { font-size: 12.5px; }
+    .setup-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 10px; margin-bottom: 10px; }
+    .setup-grid .hint { display: none; }
+    .setup .actions { position: sticky; bottom: 0; z-index: 2; padding: 6px 0; background: rgba(21, 24, 32, .97); }
+}
